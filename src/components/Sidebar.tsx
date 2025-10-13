@@ -47,7 +47,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           >
             🏠 Home
           </NavLink>
-
+          <NavLink
+            to="/itens"
+            className={({ isActive }) => `${linkBase} ${isActive ? linkActive : ""}`}
+            onClick={onClose}
+          >
+            🔎 Pesquisar Itens NCM
+          </NavLink>
           {admin && (
             <NavLink
               to="/cadastro"

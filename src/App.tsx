@@ -8,6 +8,7 @@ import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { useAuth, isAdmin } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import ItemsSearchPage from "./pages/ItemsSearchPage";
 
 function Shell() {
   const { role } = useAuth();
@@ -27,6 +28,7 @@ function Shell() {
         <Routes>
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<HomePage />} />
+            <Route path="/itens" element={<ItemsSearchPage />} />
             {admin ? (
               <Route path="/cadastro" element={<CadastroPage />} />
             ) : (

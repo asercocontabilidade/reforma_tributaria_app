@@ -2,23 +2,98 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base */
-:root { color-scheme: light; }
+/* ========== BASE ========== */
+:root { color-scheme: light dark; }
 html, body, #root { height: 100%; }
 
-body { @apply bg-white text-gray-900 antialiased; }
-.dark body { @apply bg-[#0b0a28] text-gray-100; }
+body {
+  @apply bg-white text-gray-900 antialiased;
+}
 
-/* Helpers */
-.btn { @apply inline-flex items-center justify-center rounded-lg px-4 py-2 font-medium transition; }
-.btn-primary { @apply bg-secondary text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary; }
+.dark body {
+  @apply bg-[#121212] text-gray-100;
+  color-scheme: dark;
+}
 
-.input { @apply w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary bg-white text-gray-900; }
-.dark .input { @apply border-gray-700 bg-[#0f0e2f] text-gray-100 focus:ring-white; }
+/* ========== BUTTONS ========== */
+.btn {
+  @apply inline-flex items-center justify-center rounded-lg px-4 py-2 font-medium transition-all duration-200;
+}
 
-.card { @apply rounded-2xl border border-gray-200 bg-white p-6 shadow-sm; }
-.dark .card { @apply border-white/10 bg-[#0f0e2f]; }
+.btn-primary {
+  @apply bg-[#B20327] text-white hover:bg-[#8a021f]
+         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#B20327];
+}
 
-.backdrop { @apply fixed inset-0 bg-black/40 transition-opacity; }
+.dark .btn-primary {
+  @apply bg-[#ff526c] text-white hover:bg-[#ff3c59]
+         focus:ring-[#ff526c] focus:ring-offset-0;
+}
+
+/* ========== INPUTS ========== */
+.input {
+  @apply w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900
+         focus:outline-none focus:ring-2 focus:ring-[#B20327];
+}
+
+.dark .input {
+  @apply border-[#2a2a2a] bg-[#1e1e1e] text-gray-100 placeholder-gray-400
+         focus:ring-[#ff526c] focus:ring-offset-0;
+}
+
+/* ========== CARD ========== */
+.card {
+  @apply rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-colors;
+}
+
+.dark .card {
+  @apply border-[#2a2a2a] bg-[#1e1e1e] text-gray-100 shadow-[0_0_10px_-4px_rgba(0,0,0,0.3)];
+}
+
+/* ========== BACKDROP ========== */
+.backdrop {
+  @apply fixed inset-0 bg-black/50 transition-opacity backdrop-blur-sm;
+}
+
+/* ========== TEXT HELPERS ========== */
+.text-muted {
+  @apply text-gray-500 dark:text-gray-400;
+}
+
+/* ========== CHECKBOXES (APERFEIÇOADOS) ========== */
+input[type="checkbox"] {
+  @apply appearance-none h-5 w-5 border border-black rounded-md bg-white cursor-pointer transition-all duration-150;
+}
+
+input[type="checkbox"]:hover {
+  @apply border-[#B20327] scale-105; /* leve zoom no hover */
+}
+
+input[type="checkbox"]:checked {
+  @apply bg-[#B20327] border-[#B20327] text-white;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg viewBox='0 0 20 20' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 1rem 1rem;
+}
+
+/* ====== DARK MODE ====== */
+.dark input[type="checkbox"] {
+  @apply border-2 border-white bg-[#1e1e1e];
+}
+
+.dark input[type="checkbox"]:hover {
+  @apply border-[#ff526c] scale-105;
+}
+
+.dark input[type="checkbox"]:checked {
+  @apply bg-[#ff526c] border-[#ff526c];
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg viewBox='0 0 20 20' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 1rem 1rem;
+}
+
+
 
 
