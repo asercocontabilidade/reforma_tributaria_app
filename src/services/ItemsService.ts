@@ -1,7 +1,8 @@
-export type FilterField = "ITEM" | "DESCRIÇÃO DO PRODUTO" | "NCM" | "DESCRIÇÃO TIPI" | "ALL";
+export type FilterField = "ITEM" | "ANEXO" | "DESCRIÇÃO DO PRODUTO" | "NCM" | "DESCRIÇÃO TIPI" | "ALL";
 
 export type ItemRow = {
   ITEM: string;
+  ANEXO: string;
   "DESCRIÇÃO DO PRODUTO": string;
   NCM: string;
   "DESCRIÇÃO TIPI": string;

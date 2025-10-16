@@ -55,7 +55,7 @@ export default function FilterDropdown({
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((s) => !s)}
-        className="btn rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/40 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+        className="btn btn-primary min-w-[140px]"
       >
         Filtros ({count}/2)
       </button>

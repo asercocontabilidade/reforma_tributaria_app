@@ -3,9 +3,11 @@ import { searchItems, FilterField, ItemRow, SearchResponse } from "../services/I
 import Loader from "../components/Loader";
 import Pagination from "../components/Pagination";
 import FilterDropdown from "../components/FilterDropdown.tsx";
+import CstDetailsPopover from "../components/CstDetailsPopover";
 
 const CHECK_OPTIONS: { label: string; value: Exclude<FilterField, "ALL"> }[] = [
   { label: "ITEM", value: "ITEM" },
+  { label: "Anexo", value: "ANEXO" },
   { label: "Descrição do Produto", value: "DESCRIÇÃO DO PRODUTO" },
   { label: "NCM", value: "NCM" },
   { label: "Descrição TIPI", value: "DESCRIÇÃO TIPI" },
@@ -81,7 +83,7 @@ export default function ItemsSearchPage() {
     <div className="p-4 md:p-6">
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <h2 className="text-2xl font-semibold text-primary dark:text-white">
-            Pesquisar Itens
+            Alíquota 28%
         </h2>
 
         <FilterDropdown
@@ -127,7 +129,14 @@ export default function ItemsSearchPage() {
         </div>
 
         <div className="flex items-end">
-          <button type="submit" className="btn btn-primary min-w-[140px]" disabled={!canSearch}>
+          <button
+            type="submit"
+            disabled={!canSearch}
+            className="btn rounded-xl border border-gray-300 bg-white px-4 py-3 text-base font-semibold text-gray-800 
+                      hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/40 
+                      dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 
+                      min-w-[160px]"
+          >
             Pesquisar
           </button>
         </div>
@@ -153,10 +162,15 @@ export default function ItemsSearchPage() {
             <thead>
               <tr className="text-left text-sm text-gray-600 dark:text-gray-300">
                 <th className="px-3 py-2">ITEM</th>
-                <th className="px-3 py-2">DESCRIÇÃO DO PRODUTO</th>
+                <th className="px-3 py-2 text-left w-24">ANEXO</th> 
+                <th className="px-3 py-2 min-w-[260px] md:min-w-[200px]">
+                  DESCRIÇÃO DO PRODUTO
+                </th>
                 <th className="px-3 py-2">NCM</th>
-                <th className="px-3 py-2">DESCRIÇÃO TIPI</th>
-                <th className="px-3 py-2">CST IBS E CBS</th>
+                <th className="px-3 py-2 min-w-[220px] md:min-w-[150px]">
+                  DESCRIÇÃO TIPI
+                </th>
+                <th className="px-3 py-2 w-20">CST IBS E CBS</th>
                 <th className="px-3 py-2">CCLASSTRIB</th>
               </tr>
             </thead>
@@ -164,14 +178,18 @@ export default function ItemsSearchPage() {
               {data.map((row, idx) => (
                 <tr key={idx} className="card dark:bg-[#0f0e2f]">
                   <td className="px-3 py-2">{row.ITEM}</td>
+                  <td className="px-3 py-2 w-24">{row.ANEXO}</td> 
                   <td className="px-3 py-2">{row["DESCRIÇÃO DO PRODUTO"]}</td>
                   <td className="px-3 py-2">{row.NCM}</td>
                   <td className="px-3 py-2">{row["DESCRIÇÃO TIPI"]}</td>
-                  <td className="px-3 py-2">{row["CST IBS E CBS"]}</td>
+                  <td className="px-3 py-2 w-28 md:w-32">
+                    <CstDetailsPopover cst={String(row["CST IBS E CBS"] ?? "")} />
+                  </td>
                   <td className="px-3 py-2">{row.CCLASSTRIB}</td>
                 </tr>
               ))}
             </tbody>
+
           </table>
 
           <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
