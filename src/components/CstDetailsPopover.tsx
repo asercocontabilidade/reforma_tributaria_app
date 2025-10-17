@@ -1,14 +1,31 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchCstDetails, CstDetails } from "../services/CstService";
+import { fetchItemDetails, ItemDetails } from "../services/CstService";
 
 // Tipagem
 type Props = {
-  cst: string;
+  cst: string;           // continua exibindo o CST na UI (rótulo)
+  ncm?: string;          // novo: identifica a linha a consultar no backend
+  itemId?: string;       // opcional: alternativa se não houver NCM
   className?: string;
 };
 
 // Cache simples para não repetir chamadas
-const memoryCache = new Map<string, CstDetails>();
+const memoryCache = new Map<string, ItemDetails | null>();
+
+// helper no topo do componente
+function fmtPercent(v: string | number | null | undefined) {
+  if (v === null || v === undefined || v === "") return "—";
+  const raw = String(v).trim().replace(",", ".");
+  const num = Number(raw);
+  if (!isNaN(num)) {
+    const pct = num <= 1 && num >= 0 ? num * 100 : num; // 1 -> 100, 0.6 -> 60
+    // arredonda de forma amigável (sem zeros desnecessários)
+    const s = Number.isInteger(pct) ? String(pct) : pct.toFixed(2).replace(/\.00$/, "");
+    return `${s}%`;
+  }
+  return raw; // se vier "200" já formatado
+}
+
 
 // Ícone de olho 👁️
 function EyeIcon({ className = "w-4 h-4" }) {
@@ -31,9 +48,9 @@ function EyeIcon({ className = "w-4 h-4" }) {
   );
 }
 
-export default function CstDetailsPopover({ cst, className = "" }: Props) {
+export default function CstDetailsPopover({ cst, ncm, itemId, className = "" }: Props) {
   const [open, setOpen] = useState(false);
-  const [details, setDetails] = useState<CstDetails | null>(null);
+  const [details, setDetails] = useState<ItemDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
@@ -48,10 +65,16 @@ export default function CstDetailsPopover({ cst, className = "" }: Props) {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [open]);
 
+  function cacheKey() {
+    return `k:${ncm ?? ""}|${itemId ?? ""}`;
+  }
+
   async function toggle() {
     if (!open) {
-      if (memoryCache.has(cst)) {
-        setDetails(memoryCache.get(cst)!);
+      const key = cacheKey();
+
+      if (memoryCache.has(key)) {
+        setDetails(memoryCache.get(key)!);
         setErr(null);
         setOpen(true);
         return;
@@ -60,18 +83,26 @@ export default function CstDetailsPopover({ cst, className = "" }: Props) {
       setLoading(true);
       setErr(null);
       try {
-        const d = await fetchCstDetails(cst);
-        memoryCache.set(cst, d);
+        const d = await fetchItemDetails({ ncm, item: itemId });
+        memoryCache.set(key, d);
         setDetails(d);
         setOpen(true);
       } catch (e: any) {
-        console.warn("Falha ao buscar detalhes — modo teste ativado.");
+        console.warn("Falha ao buscar detalhes — exibindo dados de teste.");
         setErr(e?.message || "Erro ao carregar detalhes");
-        // textos fixos de teste quando a API falhar
-        setDetails({
-          reduction_percent: "Teste: 12%",
-          legal_basis: "Lei 12.345/2024 - Art. 3º, inciso IV",
-        });
+        // dados de teste apenas se a API falhar
+        const fallback: ItemDetails = {
+          anexo: "",
+          item: itemId ?? "",
+          ncm: ncm ?? "",
+          product_description: "",
+          full_description:
+            "Teste: DESCRIÇÃO COMPLETA (substitui Base Legal quando API falhar).",
+          ibs: "Teste: 12%",
+          cbs: "Teste: 8%",
+        };
+        memoryCache.set(key, fallback);
+        setDetails(fallback);
         setOpen(true);
       } finally {
         setLoading(false);
@@ -81,6 +112,7 @@ export default function CstDetailsPopover({ cst, className = "" }: Props) {
     }
   }
 
+  // Render
   return (
     <div className={`relative ${className}`} ref={ref}>
       {/* Linha única: número do CST + botão olho */}
@@ -121,12 +153,25 @@ export default function CstDetailsPopover({ cst, className = "" }: Props) {
                 Informações do CST
               </div>
 
+              {/* Percentuais IBS/CBS */}
               <div className="rounded-lg bg-gray-50 p-3 text-sm dark:bg-white/10">
                 <div className="mb-1 text-xs text-gray-500 dark:text-gray-400">
                   Percentual de redução
                 </div>
                 <div className="font-medium text-gray-900 dark:text-gray-100">
-                  {details?.reduction_percent ?? "—"}
+                  {details?.ibs || details?.cbs ? (
+                    <>
+                      {details?.ibs != null && details?.ibs !== "" ? (
+                        <span>IBS: {fmtPercent(details.ibs)}</span>
+                      ) : null}
+                      {details?.ibs && details?.cbs ? <span> • </span> : null}
+                      {details?.cbs != null && details?.cbs !== "" ? (
+                        <span>CBS: {fmtPercent(details.cbs)}</span>
+                      ) : null}
+                    </>
+                  ) : (
+                    "—"
+                  )}
                 </div>
                 {err && (
                   <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -135,12 +180,13 @@ export default function CstDetailsPopover({ cst, className = "" }: Props) {
                 )}
               </div>
 
+              {/* Base legal -> agora mostra DESCRIÇÃO COMPLETA */}
               <div className="rounded-lg bg-gray-50 p-3 text-sm dark:bg-white/10">
                 <div className="mb-1 text-xs text-gray-500 dark:text-gray-400">
                   Base legal
                 </div>
                 <div className="font-medium text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
-                  {details?.legal_basis ?? "—"}
+                  {details?.full_description ?? "—"}
                 </div>
                 {err && (
                   <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -148,6 +194,14 @@ export default function CstDetailsPopover({ cst, className = "" }: Props) {
                   </div>
                 )}
               </div>
+
+              {/* Contexto opcional: NCM/ITEM */}
+              {(details?.ncm || details?.item) && (
+                <div className="rounded-lg bg-gray-50 p-3 text-xs text-gray-600 dark:bg-white/5 dark:text-gray-300">
+                  {details?.ncm ? <div>NCM: {details.ncm}</div> : null}
+                  {details?.item ? <div>ITEM: {details.item}</div> : null}
+                </div>
+              )}
 
               <div className="flex justify-end">
                 <button
@@ -165,5 +219,6 @@ export default function CstDetailsPopover({ cst, className = "" }: Props) {
     </div>
   );
 }
+
 
 

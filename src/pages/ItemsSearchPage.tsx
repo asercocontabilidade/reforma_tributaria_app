@@ -183,7 +183,11 @@ export default function ItemsSearchPage() {
                   <td className="px-3 py-2">{row.NCM}</td>
                   <td className="px-3 py-2">{row["DESCRIÇÃO TIPI"]}</td>
                   <td className="px-3 py-2 w-28 md:w-32">
-                    <CstDetailsPopover cst={String(row["CST IBS E CBS"] ?? "")} />
+                    <CstDetailsPopover
+                      cst={String(row["CST IBS E CBS"] ?? "")}
+                      ncm={String(row["NCM"] ?? "")}
+                      itemId={String(row["ITEM"] ?? "")}
+                    />
                   </td>
                   <td className="px-3 py-2">{row.CCLASSTRIB}</td>
                 </tr>
