@@ -1,20 +1,20 @@
+// ItemsSearchPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import { searchItems, FilterField, ItemRow, SearchResponse } from "../services/ItemsService";
 import Loader from "../components/Loader";
 import Pagination from "../components/Pagination";
-import FilterDropdown from "../components/FilterDropdown.tsx";
+import FilterDropdown from "../components/FilterDropdown";
 import CstDetailsPopover from "../components/CstDetailsPopover";
 
-const CHECK_OPTIONS: { label: string; value: Exclude<FilterField, "ALL"> }[] = [
+const CHECK_OPTIONS = [
   { label: "ITEM", value: "ITEM" },
   { label: "Anexo", value: "ANEXO" },
   { label: "Descrição do Produto", value: "DESCRIÇÃO DO PRODUTO" },
   { label: "NCM", value: "NCM" },
   { label: "Descrição TIPI", value: "DESCRIÇÃO TIPI" },
-];
+] as const;
 
 export default function ItemsSearchPage() {
-  // filtros (máx 2) escolhidos no dropdown
   const [selected, setSelected] = useState<Exclude<FilterField, "ALL">[]>([]);
   const [q1, setQ1] = useState("");
   const [q2, setQ2] = useState("");
@@ -28,11 +28,14 @@ export default function ItemsSearchPage() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  // ⬇️ NOVO: controla qual linha está “ativa” (com popover aberto)
+  const [activeRowKey, setActiveRowKey] = useState<string | null>(null);
+
   const field1: FilterField = selected[0] ?? "ALL";
   const field2: FilterField | undefined = selected[1];
 
   const canSearch = useMemo(() => {
-    if (selected.length === 0) return q1.trim().length >= 0; // ALL pode ser vazio (lista tudo)
+    if (selected.length === 0) return q1.trim().length >= 0;
     if (selected.length === 1) return q1.trim().length > 0;
     return q1.trim().length > 0 && q2.trim().length > 0;
   }, [selected, q1, q2]);
@@ -58,11 +61,13 @@ export default function ItemsSearchPage() {
       setPage(res.page);
       setTotalPages(res.total_pages);
       setTotalItems(res.total_items);
+      setActiveRowKey(null); // limpa seleção quando a lista muda
     } catch (e: any) {
       setErr(e?.message || "Erro ao buscar itens.");
       setData([]);
       setTotalPages(1);
       setTotalItems(0);
+      setActiveRowKey(null);
     } finally {
       setLoading(false);
     }
@@ -81,23 +86,20 @@ export default function ItemsSearchPage() {
 
   return (
     <div className="p-4 md:p-6">
-        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <h2 className="text-2xl font-semibold text-primary dark:text-white">
-            Alíquota 28%
-        </h2>
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <h2 className="text-2xl font-semibold text-primary dark:text-white">Alíquota 28%</h2>
 
         <FilterDropdown
-            options={CHECK_OPTIONS}
-            value={selected}
-            onChange={setSelected}
-            max={2}
-            className="mt-2 md:mt-0"  // 👈 empurra pra baixo no mobile, alinha no desktop
+          options={CHECK_OPTIONS as any}
+          value={selected}
+          onChange={setSelected}
+          max={2}
+          className="mt-2 md:mt-0"
         />
-        </div>
-      {/* Inputs de busca (1º e 2º conforme filtros) */}
+      </div>
+
       <form onSubmit={onSubmit} className="mb-4 grid gap-3 md:grid-cols-[1fr_auto]">
         <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2">
-          {/* Campo 1 */}
           <div className="flex flex-col">
             <label className="mb-1 text-xs font-medium text-gray-600 dark:text-gray-300">
               {selected[0] ? `Buscar em ${selected[0]}` : "Buscar (Todos)"}
@@ -111,7 +113,6 @@ export default function ItemsSearchPage() {
             />
           </div>
 
-          {/* Campo 2 (aparece se há 2 filtros) */}
           {selected.length === 2 && (
             <div className="flex flex-col">
               <label className="mb-1 text-xs font-medium text-gray-600 dark:text-gray-300">
@@ -133,9 +134,9 @@ export default function ItemsSearchPage() {
             type="submit"
             disabled={!canSearch}
             className="btn rounded-xl border border-gray-300 bg-white px-4 py-3 text-base font-semibold text-gray-800 
-                      hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/40 
-                      dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 
-                      min-w-[160px]"
+                       hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/40 
+                       dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 
+                       min-w-[160px]"
           >
             Pesquisar
           </button>
@@ -162,38 +163,50 @@ export default function ItemsSearchPage() {
             <thead>
               <tr className="text-left text-sm text-gray-600 dark:text-gray-300">
                 <th className="px-3 py-2">ITEM</th>
-                <th className="px-3 py-2 text-left w-24">ANEXO</th> 
-                <th className="px-3 py-2 min-w-[260px] md:min-w-[200px]">
-                  DESCRIÇÃO DO PRODUTO
-                </th>
+                <th className="px-3 py-2 text-left w-24">ANEXO</th>
+                <th className="px-3 py-2 min-w-[260px] md:min-w-[200px]">DESCRIÇÃO DO PRODUTO</th>
                 <th className="px-3 py-2">NCM</th>
-                <th className="px-3 py-2 min-w-[220px] md:min-w-[150px]">
-                  DESCRIÇÃO TIPI
-                </th>
-                <th className="px-3 py-2 w-20">CST IBS E CBS</th>
+                <th className="px-3 py-2 min-w-[220px] md:min-w-[150px]">DESCRIÇÃO TIPI</th>
+                <th className="px-3 py-2 w-28 md:w-32">CST IBS E CBS</th>
                 <th className="px-3 py-2">CCLASSTRIB</th>
               </tr>
             </thead>
-            <tbody>
-              {data.map((row, idx) => (
-                <tr key={idx} className="card dark:bg-[#0f0e2f]">
-                  <td className="px-3 py-2">{row.ITEM}</td>
-                  <td className="px-3 py-2 w-24">{row.ANEXO}</td> 
-                  <td className="px-3 py-2">{row["DESCRIÇÃO DO PRODUTO"]}</td>
-                  <td className="px-3 py-2">{row.NCM}</td>
-                  <td className="px-3 py-2">{row["DESCRIÇÃO TIPI"]}</td>
-                  <td className="px-3 py-2 w-28 md:w-32">
-                    <CstDetailsPopover
-                      cst={String(row["CST IBS E CBS"] ?? "")}
-                      ncm={String(row["NCM"] ?? "")}
-                      itemId={String(row["ITEM"] ?? "")}
-                    />
-                  </td>
-                  <td className="px-3 py-2">{row.CCLASSTRIB}</td>
-                </tr>
-              ))}
-            </tbody>
 
+            <tbody>
+              {data.map((row, idx) => {
+                const key = `${row.ITEM}__${row.NCM}__${row["CST IBS E CBS"] ?? ""}`;
+                const isActive = activeRowKey === key;
+
+                return (
+                    <tr
+                      key={idx}
+                      className={[
+                        "transition-colors rounded-2xl border shadow-sm", // base sem bg
+                        isActive
+                          ? "ring-1 ring-blue-200 bg-blue-50 text-blue-900 dark:ring-blue-700/50 dark:bg-blue-900/30 dark:text-blue-100"
+                          : "border-gray-200 bg-white dark:border-white/10 dark:bg-[#0f0e2f]", // equivalente ao 'card'
+                      ].join(" ")}
+                    >
+                    <td className="px-3 py-2">{row.ITEM}</td>
+                    <td className="px-3 py-2 w-24">{row.ANEXO}</td>
+                    <td className="px-3 py-2">{row["DESCRIÇÃO DO PRODUTO"]}</td>
+                    <td className="px-3 py-2">{row.NCM}</td>
+                    <td className="px-3 py-2">{row["DESCRIÇÃO TIPI"]}</td>
+
+                    <td className="px-3 py-2 w-28 md:w-32">
+                      <CstDetailsPopover
+                        cst={String(row["CST IBS E CBS"] ?? "")}
+                        ncm={String(row["NCM"] ?? "")}
+                        itemId={String(row["ITEM"] ?? "")}
+                        onActiveChange={(open) => setActiveRowKey(open ? key : null)} // ⬅️ aqui a mágica
+                      />
+                    </td>
+
+                    <td className="px-3 py-2">{row.CCLASSTRIB}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
           </table>
 
           <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
@@ -206,5 +219,6 @@ export default function ItemsSearchPage() {
     </div>
   );
 }
+
 
 

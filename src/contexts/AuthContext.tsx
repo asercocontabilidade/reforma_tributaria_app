@@ -1,6 +1,6 @@
-// src/contexts/Auth.tsx
 import { createContext, useContext, ReactNode, useEffect } from "react";
 import { create } from "zustand";
+import { refresh } from "../services/AuthService"; // ⬅️ Adiciona o serviço de refresh
 
 // --- Tipos ---
 type Role = "admin" | "administrator" | "client";
@@ -87,51 +87,46 @@ const useAuthStore = create<AuthState>((set, get) => {
   };
 });
 
-// --- Contexto/Provider (mantive sua API pública) ---
 const AuthContext = createContext<typeof useAuthStore | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const store = useAuthStore;
 
-  // Reidratação segura ao focar a aba: NÃO sobrescreve sem token
+  async function tryRefreshToken() {
+    const persisted = STORAGE.get();
+    if (!persisted.token) return; 
+    try {
+      const { access_token } = await refresh(); 
+      store.getState().setAuth({
+        token: access_token,
+        role: (persisted.role ?? "client") as Role,
+        isActive: persisted.isActive ?? true,
+        id: persisted.userId ?? 0,
+      });
+      console.log("🔁 Token renovado com sucesso.");
+    } catch (err) {
+      console.warn("❌ Falha ao renovar token:", err);
+    }
+  }
+
   useEffect(() => {
-    const onFocus = async () => {
+    tryRefreshToken();
+  }, []);
+
+  useEffect(() => {
+    const onFocus = () => {
       const persisted = STORAGE.get();
-      // Se NÃO houver token persistido, não mexe no estado atual
       if (!persisted.token) return;
-
-      // (Opcional) Se quiser validar expiração e fazer refresh:
-      // try {
-      //   if (isExpired(persisted.token)) {
-      //     const r = await fetch(`${API_URL}/auth/refresh`, { method: "POST", credentials: "include" });
-      //     if (r.ok) {
-      //       const j = await r.json();
-      //       // mantenha role/isActive/userId do storage
-      //       store.getState().setAuth({
-      //         token: j.access_token,
-      //         role: (persisted.role ?? "client") as Role,
-      //         isActive: persisted.isActive ?? true,
-      //         id: persisted.userId ?? 0,
-      //       });
-      //       return;
-      //     }
-      //   }
-      // } catch (_) {}
-
-      // Sem refresh: apenas garante que o estado em memória reflete o storage
-      // Importante: só chama setAuth se houver token.
       store.getState().setAuth({
         token: persisted.token!,
         role: (persisted.role ?? "client") as Role,
         isActive: persisted.isActive ?? true,
         id: persisted.userId ?? 0,
       });
+      tryRefreshToken();
     };
 
     window.addEventListener("focus", onFocus);
-    // chama uma vez no mount para inicializar a sessão reidratada
-    onFocus();
-
     return () => window.removeEventListener("focus", onFocus);
   }, [store]);
 
@@ -146,6 +141,7 @@ export const useAuth = () => {
 
 // Helper para checar admin
 export const isAdmin = (role: Role | null) => role === "admin" || role === "administrator";
+
 
 /* Opcional: checar expiração do JWT
 function isExpired(token: string): boolean {

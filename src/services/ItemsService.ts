@@ -1,3 +1,5 @@
+import { apiFetch } from "./api";
+
 export type FilterField = "ITEM" | "ANEXO" | "DESCRIÇÃO DO PRODUTO" | "NCM" | "DESCRIÇÃO TIPI" | "ALL";
 
 export type ItemRow = {
@@ -17,25 +19,24 @@ export type SearchResponse = {
   data: ItemRow[];
 };
 
+const token = localStorage.getItem("access_token"); // ou pegue do seu AuthContext
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export async function searchItems(params: {
-  field: FilterField;
-  q: string;
-  field2?: FilterField | null;
+  q?: string;
+  field?: FilterField;
   q2?: string;
-  page: number;
+  field2?: FilterField;
+  page?: number;
   limit?: number;
 }): Promise<SearchResponse> {
   const url = new URL(`${API_URL}/itens/search`);
-  url.searchParams.set("field", params.field || "ALL");
-  url.searchParams.set("q", params.q || "");
-  if (params.field2) url.searchParams.set("field2", params.field2);
-  if (params.q2) url.searchParams.set("q2", params.q2);
-  url.searchParams.set("page", String(params.page || 1));
-  if (params.limit) url.searchParams.set("limit", String(params.limit));
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && String(v).length > 0) url.searchParams.set(k, String(v));
+  });
 
-  const res = await fetch(url.toString(), { method: "GET" });
+  const res = await apiFetch(url.toString(), { method: "GET" });
   if (!res.ok) {
     const detail = (await res.json().catch(() => ({} as any)))?.detail || res.statusText;
     throw new Error(detail);
