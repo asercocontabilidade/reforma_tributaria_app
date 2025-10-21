@@ -9,6 +9,8 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import { useAuth, isAdmin } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import ItemsSearchPage from "./pages/ItemsSearchPage";
+import UsersPage from "./pages/UsersPage";
+import PageNewLayout from "./pages/PageNewLayout";
 
 function Shell() {
   const { role } = useAuth();
@@ -29,13 +31,16 @@ function Shell() {
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/itens" element={<ItemsSearchPage />} />
+            <Route path="/usuarios" element={<UsersPage />} />
+            {/* <Route path="*" element={<Navigate to="/usuarios" replace />} /> */}
             {admin ? (
               <Route path="/cadastro" element={<CadastroPage />} />
             ) : (
               <Route path="/cadastro" element={<Navigate to="/" replace />} />
             )}
           </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/pagina" element={<PageNewLayout />} />
+          <Route path="*" element={<Navigate to="/pagina" replace />} />
         </Routes>
       </main>
     </div>

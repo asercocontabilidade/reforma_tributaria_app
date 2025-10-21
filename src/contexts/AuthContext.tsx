@@ -1,6 +1,7 @@
 import { createContext, useContext, ReactNode, useEffect } from "react";
 import { create } from "zustand";
 import { refresh } from "../services/AuthService"; // ⬅️ Adiciona o serviço de refresh
+import { setTokenUpdateHandler } from "../services/api"; // 👈 novo
 
 // --- Tipos ---
 type Role = "admin" | "administrator" | "client";
@@ -112,6 +113,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     tryRefreshToken();
   }, []);
+
+  useEffect(() => {
+    // quando api.ts renovar token, refletir no Zustand
+    setTokenUpdateHandler((t) => {
+      if (t) {
+        store.getState().setAuth({
+          token: t,
+          role: (localStorage.getItem("role") as any) ?? "client",
+          isActive: (localStorage.getItem("is_active") ?? "true") === "true",
+          id: Number(localStorage.getItem("user_id") ?? "0"),
+        });
+      } else {
+        // se zerou, desloga localmente
+        store.getState().clear();
+      }
+    });
+  }, [store]);
 
   useEffect(() => {
     const onFocus = () => {

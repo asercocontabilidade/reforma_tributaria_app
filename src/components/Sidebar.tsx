@@ -164,7 +164,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   </li>
                   <li>
                     <NavLink
-                      to="/cadastro/usuario"
+                      to="/usuarios"
                       className={({ isActive }) =>
                         cn(
                           "ml-6 mt-1 flex items-center gap-2 rounded-lg px-4 py-2 text-white/90 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 transition",
