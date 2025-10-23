@@ -1,28 +1,25 @@
 // src/services/api.ts
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-// ---- Token store (usa localStorage) ----
 function getToken(): string | null {
   return localStorage.getItem("access_token");
 }
 function setToken(t: string | null) {
   if (t) localStorage.setItem("access_token", t);
   else localStorage.removeItem("access_token");
-  // notifica o AuthContext (se registrado)
   if (tokenUpdateHandler) tokenUpdateHandler(t);
 }
 
-// Permite o AuthContext “ouvir” quando o token muda aqui
+// Permite o AuthContext “ouvir” mudanças do token
 let tokenUpdateHandler: ((token: string | null) => void) | null = null;
 export function setTokenUpdateHandler(fn: (token: string | null) => void) {
   tokenUpdateHandler = fn;
 }
 
-// ---- Chama /auth/refresh para renovar o token ----
 export async function refreshAccessToken(): Promise<string> {
   const res = await fetch(`${API_URL}/auth/refresh`, {
     method: "POST",
-    credentials: "include", // envia cookie httpOnly do refresh
+    credentials: "include",
   });
   if (!res.ok) {
     throw new Error("Refresh failed");
@@ -32,51 +29,116 @@ export async function refreshAccessToken(): Promise<string> {
   return data.access_token;
 }
 
-// ---- Wrapper principal de fetch ----
+async function extractDetail(res: Response): Promise<string> {
+  try {
+    const clone = res.clone();
+    const json = await clone.json();
+    return (json?.detail ?? json?.message ?? "").toString();
+  } catch {
+    try {
+      return await res.clone().text();
+    } catch {
+      return "";
+    }
+  }
+}
+
+function looksLikeInvalidOrExpired(detail: string): boolean {
+  const s = (detail || "").toLowerCase();
+  return (
+    s.includes("invalid or expired token") ||
+    (s.includes("invalid") && s.includes("token")) ||
+    (s.includes("expired") && s.includes("token")) ||
+    s.includes("token expirado") ||
+    s.includes("token inválido")
+  );
+}
+
 export async function apiFetch(
   input: RequestInfo | URL,
   init: RequestInit = {},
   { retryOn401 = true }: { retryOn401?: boolean } = {}
 ): Promise<Response> {
-  const headers = new Headers(init.headers || {});
+  const url = input instanceof URL ? input.toString() : (input as string);
   const token = getToken();
-  if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const first = await fetch(input instanceof URL ? input.toString() : input, {
-    ...init,
-    headers,
-  });
+  const h1 = new Headers(init.headers || {});
+  if (token) h1.set("Authorization", `Bearer ${token}`);
 
-  // Se deu 401, tenta detectar a mensagem do backend
-  if (first.status === 401 && retryOn401) {
-    try {
-      const errJson = await first.clone().json().catch(() => ({} as any));
-      const detail: string =
-        errJson?.detail ||
-        first.statusText ||
-        "";
+  let res = await fetch(url, { ...init, headers: h1 });
+  if (res.ok) return res;
 
-      const looksExpired =
-        /invalid|expired|token/i.test(detail);
+  if (res.status === 401 && retryOn401) {
+    const detail1 = await extractDetail(res);
 
-      if (looksExpired) {
-        // tenta renovar
+    if (looksLikeInvalidOrExpired(detail1)) {
+      try {
         await refreshAccessToken();
-
-        // refaz a request com o novo token (uma vez)
-        const h2 = new Headers(init.headers || {});
-        const t2 = getToken();
-        if (t2) h2.set("Authorization", `Bearer ${t2}`);
-
-        return fetch(input instanceof URL ? input.toString() : input, {
-          ...init,
-          headers: h2,
-        });
+      } catch {
+        throw new Error("Sua conta expirou, saia e entre novamente.");
       }
-    } catch {
-      // se qualquer coisa falhar, cai pra resposta original
+
+      const newToken = getToken();
+      const h2 = new Headers(init.headers || {});
+      if (newToken) h2.set("Authorization", `Bearer ${newToken}`);
+
+      res = await fetch(url, { ...init, headers: h2 });
+      if (res.ok) return res;
+
+      if (res.status === 401) {
+        const detail2 = await extractDetail(res);
+        if (looksLikeInvalidOrExpired(detail2)) {
+          throw new Error("Sua conta expirou, saia e entre novamente.");
+        }
+      }
     }
   }
 
-  return first;
+  return res;
 }
+
+export async function apiGetJson<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const res = await apiFetch(`${API_URL}${path}`, { ...init, method: "GET" });
+  if (!res.ok) {
+    const detail = await extractDetail(res);
+    throw new Error(detail || res.statusText);
+  }
+  return res.json() as Promise<T>;
+}
+
+export async function apiPostJson<T>(
+  path: string,
+  body: unknown,
+  init: RequestInit = {}
+): Promise<T> {
+  const res = await apiFetch(`${API_URL}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(init.headers || {}) },
+    body: JSON.stringify(body),
+    ...init,
+  });
+  if (!res.ok) {
+    const detail = await extractDetail(res);
+    throw new Error(detail || res.statusText);
+  }
+  return res.json() as Promise<T>;
+}
+
+export async function apiPatchJson<T>(
+  path: string,
+  body: unknown,
+  init: RequestInit = {}
+): Promise<T> {
+  const res = await apiFetch(`${API_URL}${path}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...(init.headers || {}) },
+    body: JSON.stringify(body),
+    ...init,
+  });
+  if (!res.ok) {
+    const detail = await extractDetail(res);
+    throw new Error(detail || res.statusText);
+  }
+  return res.json() as Promise<T>;
+}
+

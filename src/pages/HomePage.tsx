@@ -13,7 +13,7 @@ export default function HomePage() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="mb-2 text-2xl font-semibold text-primary dark:text-white">Home</h2>
+        <h2 className="mb-2 text-2xl font-semibold text-primary dark:text-white">Página Inicial</h2>
         <p className="text-gray-700 dark:text-gray-200 text-justify">
           Bem-vindo! Você está autenticado.
         </p>
@@ -23,7 +23,7 @@ export default function HomePage() {
 <section className="relative overflow-hidden rounded-2xl border border-white/10 
   bg-gradient-to-br from-[#1E2A78] via-[#202656] to-[#0F1536] 
   p-6 md:p-8 dark:from-[#1B225E] dark:via-[#1A1F45] dark:to-[#0B0E28]">        <h3 className="text-xl md:text-2xl font-semibold text-white">
-          NCM e a Nova Reforma Tributária: o que muda para sua empresa
+          NCM e a Nova Reforma Tributária: o que muda para sua empresa?
         </h3>
         <p className="mt-2 text-sm md:text-base text-white/80 max-w-3xl text-justify">
           A classificação correta do <strong>NCM</strong> é a base para o enquadramento de <strong>IBS</strong>, <strong>CBS</strong> e, quando aplicável, do <strong>Imposto Seletivo (IS)</strong>.

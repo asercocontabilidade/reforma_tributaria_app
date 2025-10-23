@@ -29,6 +29,7 @@ export type UserRow = {
   role: Role;
   is_active: boolean;
   status_changed_at: string | null;
+  company_id: number | null;
 };
 
 // ---- LISTAR ----
@@ -50,6 +51,7 @@ export type CreateUserPayload = {
   password: string;
   full_name?: string;
   role: Role;
+  company_id?: number; 
 };
 
 export async function createUser(payload: CreateUserPayload): Promise<UserRow> {

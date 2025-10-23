@@ -11,6 +11,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import ItemsSearchPage from "./pages/ItemsSearchPage";
 import UsersPage from "./pages/UsersPage";
 import PageNewLayout from "./pages/PageNewLayout";
+import CompaniesPage from "./pages/CompaniesPage";
 
 function Shell() {
   const { role } = useAuth();
@@ -32,6 +33,7 @@ function Shell() {
             <Route path="/" element={<HomePage />} />
             <Route path="/itens" element={<ItemsSearchPage />} />
             <Route path="/usuarios" element={<UsersPage />} />
+            <Route path="/empresas" element={<CompaniesPage />} />
             {/* <Route path="*" element={<Navigate to="/usuarios" replace />} /> */}
             {admin ? (
               <Route path="/cadastro" element={<CadastroPage />} />

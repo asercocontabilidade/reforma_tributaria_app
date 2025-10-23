@@ -112,7 +112,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             onClick={onClose}
           >
             <IconHome className="w-5 h-5" />
-            <span>Home</span>
+            <span>Página Inicial</span>
           </NavLink>
 
           <NavLink
@@ -149,7 +149,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <ul className="pl-2">
                   <li>
                     <NavLink
-                      to="/cadastro/empresa"
+                      to="/empresas"
                       className={({ isActive }) =>
                         cn(
                           "ml-6 mt-1 flex items-center gap-2 rounded-lg px-4 py-2 text-white/90 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 transition",
