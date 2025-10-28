@@ -1,14 +1,25 @@
 import { NavLink } from "react-router-dom";
 import { isAdmin, useAuth } from "../contexts/AuthContext";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ThemeToggle from "./ThemeToggle";
-
-type SidebarProps = { isOpen: boolean; onClose: () => void };
+import bgImage from "../assets/Aserco.png";
 
 // ---------- helpers ----------
-const cn = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
+const cn = (...c) => c.filter(Boolean).join(" ");
 
-// ---------- ÍCONES (SVG inline) ----------
+// Hook simples para detectar mobile pelo breakpoint (md = 768px)
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 767.98px)").matches);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767.98px)");
+    const handler = (e) => setIsMobile(e.matches);
+    mq.addEventListener?.("change", handler);
+    return () => mq.removeEventListener?.("change", handler);
+  }, []);
+  return isMobile;
+}
+
+// ---------- ÍCONES ----------
 function IconSearch({ className = "w-5 h-5" }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -55,22 +66,17 @@ function IconWallet({ className = "w-5 h-5" }) {
 }
 function IconChevron({ className = "w-4 h-4", open = false }) {
   return (
-    <svg
-      className={cn(className, "transition-transform", open && "rotate-180")}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-    >
+    <svg className={cn(className, "transition-transform", open && "rotate-180")} viewBox="0 0 24 24" fill="none" stroke="currentColor">
       <path d="M6 9l6 6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose }) {
   const { role, clear } = useAuth();
   const admin = isAdmin(role);
+  const isMobile = useIsMobile();
 
-  // estados dos accordions
   const [cadastrosOpen, setCadastrosOpen] = useState(false);
   const [financeiroOpen, setFinanceiroOpen] = useState(false);
 
@@ -78,54 +84,92 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     "flex items-center gap-2 px-4 py-3 rounded-xl text-white/90 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 transition";
   const linkActive = "bg-white/10";
 
+  // Callback para clique em links: fecha apenas no mobile
+  const handleNavClick = () => {
+    if (isMobile) onClose();
+  };
+
   return (
     <>
+      {/* Backdrop só no mobile */}
       {isOpen && <div className="backdrop md:hidden" onClick={onClose} aria-hidden="true" />}
-      <aside
+
+      {/* <aside
         className={[
           "fixed left-0 top-0 z-40 h-screen w-64 bg-primary text-white p-4 flex flex-col transition-transform md:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
         ].join(" ")}
         aria-hidden={!isOpen}
         aria-label="Menu lateral"
+      > */}
+
+      <aside
+        className={[
+          "fixed left-0 top-0 z-40 h-screen w-64 text-white p-4 flex flex-col transition-transform",
+          isOpen ? "translate-x-0 md:translate-x-0" : "-translate-x-full md:-translate-x-full",
+        ].join(" ")}
+        style={{
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.6)), url(${bgImage})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+        aria-hidden={!isOpen}
+        aria-label="Menu lateral"
       >
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
+        {/* Header */}
+        <div className="mb-6 flex flex-col items-start gap-3">
+          <div className="flex w-full items-center justify-between">
+            {/* Botões */}
+            <div className="flex items-center gap-2 w-full justify-end">
+              {/* Botão fechar - mobile */}
+              <button
+                onClick={onClose}
+                className="md:hidden rounded-lg bg-white/10 px-3 py-2 hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/40"
+                aria-label="Fechar menu"
+                title="Fechar"
+              >
+                ✕
+              </button>
+
+              {/* Botão esconder - desktop */}
+              <button
+                onClick={onClose}
+                className="hidden md:inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/40"
+                aria-label="Esconder menu lateral"
+                title="Esconder"
+              >
+                <span className="text-sm">Esconder</span>
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M15 18l-6-6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Título abaixo do botão */}
           <h1 className="text-xl font-bold tracking-wide">Reforma Tributária</h1>
-          <button
-            onClick={onClose}
-            className="md:hidden rounded-lg bg-white/10 px-3 py-2 hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/40"
-            aria-label="Fechar menu"
-          >
-            ✕
-          </button>
         </div>
 
+
         {/* Navegação */}
-        <nav className="flex-1 space-y-2 overflow-y-auto">
-          {/* Consulta NCM (mantém fora do dropdown) */}
-          {/* Home */}
-          <NavLink
-            to="/"
-            end
-            className={({ isActive }) => `${linkBase} ${isActive ? linkActive : ""}`}
-            onClick={onClose}
-          >
+        <nav
+          className="
+            flex-1 space-y-2 overflow-y-auto
+            scrollbar-hide md:[&::-webkit-scrollbar]:hidden md:[scrollbar-width:none]
+          "
+        >
+          <NavLink to="/" end className={({ isActive }) => `${linkBase} ${isActive ? linkActive : ""}`} onClick={handleNavClick}>
             <IconHome className="w-5 h-5" />
             <span>Página Inicial</span>
           </NavLink>
 
-          <NavLink
-            to="/itens"
-            className={({ isActive }) => `${linkBase} ${isActive ? linkActive : ""}`}
-            onClick={onClose}
-          >
+          <NavLink to="/itens" className={({ isActive }) => `${linkBase} ${isActive ? linkActive : ""}`} onClick={handleNavClick}>
             <IconSearch className="w-5 h-5" />
             <span>Consulta NCM</span>
           </NavLink>
 
-
-          {/* Cadastros gerais (apenas admin) */}
           {admin && (
             <div className="mt-2">
               <button
@@ -142,10 +186,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <IconChevron open={cadastrosOpen} />
               </button>
 
-              <div
-                id="cadastros-panel"
-                className={cn("overflow-hidden transition-all", cadastrosOpen ? "max-h-40 mt-1" : "max-h-0")}
-              >
+              <div id="cadastros-panel" className={cn("overflow-hidden transition-all", cadastrosOpen ? "max-h-40 mt-1" : "max-h-0")}>
                 <ul className="pl-2">
                   <li>
                     <NavLink
@@ -153,10 +194,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                       className={({ isActive }) =>
                         cn(
                           "ml-6 mt-1 flex items-center gap-2 rounded-lg px-4 py-2 text-white/90 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 transition",
-                          isActive && "bg-white/10",
+                          isActive && "bg-white/10"
                         )
                       }
-                      onClick={onClose}
+                      onClick={handleNavClick}
                     >
                       <IconBuilding className="w-5 h-5" />
                       <span>Empresa</span>
@@ -168,10 +209,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                       className={({ isActive }) =>
                         cn(
                           "ml-6 mt-1 flex items-center gap-2 rounded-lg px-4 py-2 text-white/90 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 transition",
-                          isActive && "bg-white/10",
+                          isActive && "bg-white/10"
                         )
                       }
-                      onClick={onClose}
+                      onClick={handleNavClick}
                     >
                       <IconUsers className="w-5 h-5" />
                       <span>Usuário</span>
@@ -182,7 +223,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             </div>
           )}
 
-          {/* Financeiro (novo menu suspenso) */}
           {admin && (
             <div className="mt-2">
               <button
@@ -199,10 +239,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <IconChevron open={financeiroOpen} />
               </button>
 
-              <div
-                id="financeiro-panel"
-                className={cn("overflow-hidden transition-all", financeiroOpen ? "max-h-32 mt-1" : "max-h-0")}
-              >
+              <div id="financeiro-panel" className={cn("overflow-hidden transition-all", financeiroOpen ? "max-h-32 mt-1" : "max-h-0")}>
                 <ul className="pl-2">
                   <li>
                     <NavLink
@@ -210,10 +247,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                       className={({ isActive }) =>
                         cn(
                           "ml-6 mt-1 flex items-center gap-2 rounded-lg px-4 py-2 text-white/90 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 transition",
-                          isActive && "bg-white/10",
+                          isActive && "bg-white/10"
                         )
                       }
-                      onClick={onClose}
+                      onClick={handleNavClick}
                     >
                       <IconWallet className="w-5 h-5" />
                       <span>Contas</span>
@@ -225,7 +262,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           )}
         </nav>
 
-        {/* Toggle de tema dentro da lateral */}
+        {/* Toggle de tema */}
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="text-sm text-white/80">Tema</span>
           <ThemeToggle />
@@ -235,7 +272,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <button
           onClick={() => {
             clear();
-            onClose();
+            onClose(); // fecha também no desktop (intencional)
           }}
           className="mt-4 btn bg-white/10 text-white hover:bg-white/20"
           title="Sair"
@@ -248,4 +285,5 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     </>
   );
 }
+
 

@@ -60,7 +60,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary to-[#0b0a28] dark:from-[#0b0a28] dark:to-[#050415] flex items-center justify-center p-4 transition-all duration-300">
+    <div className="min-h-screen bg-login flex items-center justify-center p-4 transition-all duration-300">
       <div
         className={`w-full max-w-5xl transition-all duration-500 ${
           showInfo ? "grid md:grid-cols-2 gap-8" : "flex justify-center"
