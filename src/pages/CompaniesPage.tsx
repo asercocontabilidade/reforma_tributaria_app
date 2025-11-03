@@ -495,6 +495,7 @@ export default function CompaniesPage() {
   const [linkCompany, setLinkCompany] = useState<Company | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [rows, setRows] = useState<UserLite[]>([]);
 
   async function loadCompanies() {
     setLoading(true);
@@ -502,9 +503,11 @@ export default function CompaniesPage() {
     try {
       const data = await fetchCompanies();
       setCompanies(data);
+      setRows(data);
     } catch (e: any) {
       console.error("Erro ao buscar empresas:", e);
       setErr(e?.message || "Erro ao buscar empresas.");
+      setRows([]);
     } finally {
       setLoading(false);
     }
@@ -529,6 +532,9 @@ export default function CompaniesPage() {
   function usersForCompany(companyId: number): UserLite[] {
     return users.filter((u) => (u as any).company_id === companyId);
   }
+
+  const total = rows.length;
+  const hasData = total > 0;
 
   return (
     <div className="p-4 md:p-6">
@@ -646,6 +652,9 @@ export default function CompaniesPage() {
               })}
             </tbody>
           </table>
+          <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+            Total de empresas: <strong>{total}</strong>
+          </div>
         </HorizontalScroller>
       )}
 

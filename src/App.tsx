@@ -12,6 +12,7 @@ import ItemsSearchPage from "./pages/ItemsSearchPage";
 import UsersPage from "./pages/UsersPage";
 import PageNewLayout from "./pages/PageNewLayout";
 import CompaniesPage from "./pages/CompaniesPage";
+import SettingsPage from "./pages/SettingsPage";
 
 function Shell() {
   const { role } = useAuth();
@@ -61,6 +62,7 @@ function Shell() {
             <Route path="/itens" element={<ItemsSearchPage />} />
             <Route path="/usuarios" element={<UsersPage />} />
             <Route path="/empresas" element={<CompaniesPage />} />
+            <Route path="/configuracoes" element={<SettingsPage />} />
             {admin ? (
               <Route path="/cadastro" element={<CadastroPage />} />
             ) : (

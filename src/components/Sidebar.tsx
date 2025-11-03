@@ -72,6 +72,24 @@ function IconChevron({ className = "w-4 h-4", open = false }) {
   );
 }
 
+/** Ícone de engrenagem (configurações) */
+function GearIcon({ className = "h-5 w-5" }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 512 512"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="24"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M487.4 315.7l-42.7-24.7c2.8-13.3 4.3-27 4.3-41s-1.5-27.7-4.3-41l42.7-24.7c6.1-3.5 8.4-11 5.4-17.4l-45.3-78.5c-3-5.3-9.2-7.8-15.2-6.1l-50.2 14.4c-21.6-18.4-46.3-33.2-73.1-43.2L301 20.6c-1.1-6.6-6.8-11.4-13.5-11.4h-90c-6.7 0-12.4 4.8-13.5 11.4l-7.6 52.2c-26.8 10-51.5 24.8-73.1 43.2l-50.2-14.4c-6-1.7-12.3.8-15.2 6.1L-7 166.9c-3 6.4-.7 13.9 5.4 17.4l42.7 24.7c-2.8 13.3-4.3 27-4.3 41s1.5 27.7 4.3 41L-1.6 315.7c-6.1 3.5-8.4 11-5.4 17.4l45.3 78.5c3 5.3 9.2 7.8 15.2 6.1l50.2-14.4c21.6 18.4 46.3 33.2 73.1 43.2l7.6 52.2c1.1 6.6 6.8 11.4 13.5 11.4h90c6.7 0 12.4-4.8 13.5-11.4l7.6-52.2c26.8-10 51.5-24.8 73.1-43.2l50.2 14.4c6 1.7 12.3-.8 15.2-6.1l45.3-78.5c3-6.4.7-13.9-5.4-17.4zM256 336c-44.2 0-80-35.8-80-80s35.8-80 80-80 80 35.8 80 80-35.8 80-80 80z" />
+    </svg>
+  );
+}
+
 export default function Sidebar({ isOpen, onClose }) {
   const { role, clear } = useAuth();
   const admin = isAdmin(role);
@@ -168,6 +186,17 @@ export default function Sidebar({ isOpen, onClose }) {
           <NavLink to="/itens" className={({ isActive }) => `${linkBase} ${isActive ? linkActive : ""}`} onClick={handleNavClick}>
             <IconSearch className="w-5 h-5" />
             <span>Consulta NCM</span>
+            
+          </NavLink>
+          <NavLink
+            to="/configuracoes"
+            className={({ isActive }) =>
+              `${linkBase} ${isActive ? linkActive : ""} group`
+            }
+            onClick={handleNavClick}
+          >
+            <GearIcon className="h-5 w-5 opacity-90 group-hover:opacity-100" />
+            <span>Configurações</span>
           </NavLink>
 
           {admin && (
