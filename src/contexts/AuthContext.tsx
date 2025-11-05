@@ -4,7 +4,7 @@ import { refresh } from "../services/AuthService"; // ⬅️ Adiciona o serviço
 import { setTokenUpdateHandler } from "../services/api"; // 👈 novo
 
 // --- Tipos ---
-type Role = "admin" | "administrator" | "client";
+type Role = "admin" | "administrator" | "client" | "support";
 
 type AuthState = {
   token: string | null;
@@ -158,7 +158,7 @@ export const useAuth = () => {
 };
 
 // Helper para checar admin
-export const isAdmin = (role: Role | null) => role === "admin" || role === "administrator";
+export const isAdmin = (role: Role | null) => role === "admin" || role === "administrator" || role === "support";
 
 
 /* Opcional: checar expiração do JWT

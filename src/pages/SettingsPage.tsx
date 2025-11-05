@@ -144,7 +144,7 @@ export default function SettingsPage() {
               <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Nova senha</label>
               <div className="relative">
                 <input
-                  className="input pr-10"
+                  className="w-full rounded-md border border-gray-300/30 bg-transparent px-3 py-2 pr-10 text-sm text-gray-800 placeholder-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-600/30 dark:text-gray-100 dark:placeholder-gray-500"
                   type={showPass ? "text" : "password"}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
@@ -153,7 +153,7 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => setShowPass((s) => !s)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-600 hover:bg-gray-500/10 dark:text-gray-300 dark:hover:bg-white/10"
                   aria-label={showPass ? "Ocultar senha" : "Mostrar senha"}
                 >
                   {showPass ? <EyeOff /> : <Eye />}

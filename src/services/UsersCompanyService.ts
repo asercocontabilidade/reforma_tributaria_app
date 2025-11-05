@@ -1,7 +1,7 @@
 // src/services/UsersService.ts
 import { apiGetJson } from "./api";
 
-export type UserRole = "client" | "admin" | "administrator";
+export type UserRole = "client" | "admin" | "administrator" | "support";
 
 export type UserLite = {
   id: number;
