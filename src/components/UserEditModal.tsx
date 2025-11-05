@@ -1,6 +1,7 @@
 // src/components/UserEditModal.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Role, UserRow } from "../services/UsersService";
+import { useAuth } from "../contexts/AuthContext"; 
 
 type Props = {
   open: boolean;
@@ -10,6 +11,9 @@ type Props = {
 };
 
 export default function UserEditModal({ open, onClose, initial, onSubmit }: Props) {
+  const auth = useAuth();
+  const currentRole = auth.role; // papel do usuário logado
+
   const [form, setForm] = useState({
     id: 0,
     email: "",
@@ -19,17 +23,24 @@ export default function UserEditModal({ open, onClose, initial, onSubmit }: Prop
   });
   const [saving, setSaving] = useState(false);
 
+  // opções permitidas de acordo com o papel do usuário logado
+  const allowedRoles: Role[] = useMemo(() => {
+    if (currentRole === "administrator") return ["client", "support", "administrator"];
+    return ["client", "support"];
+  }, [currentRole]);
+
   useEffect(() => {
     if (open && initial) {
+      const initialRole = allowedRoles.includes(initial.role) ? initial.role : allowedRoles[0];
       setForm({
         id: initial.id,
         email: initial.email || "",
         full_name: initial.full_name || "",
         cnpj_cpf: initial.cnpj_cpf || "",
-        role: initial.role,
+        role: initialRole,
       });
     }
-  }, [open, initial]);
+  }, [open, initial, allowedRoles]);
 
   function onChange<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -40,7 +51,12 @@ export default function UserEditModal({ open, onClose, initial, onSubmit }: Prop
     if (!form.id) return;
     setSaving(true);
     try {
-      await onSubmit(form);
+      // remove máscara antes de enviar
+      const payload = {
+        ...form,
+        cnpj_cpf: unmaskCPF(form.cnpj_cpf),
+      };
+      await onSubmit(payload); // envia sem caracteres especiais
       onClose();
     } catch (e: any) {
       alert(e?.message || "Falha ao atualizar usuário.");
@@ -51,6 +67,22 @@ export default function UserEditModal({ open, onClose, initial, onSubmit }: Prop
 
   if (!open) return null;
 
+  function formatCPF(value: string) {
+    const numeric = value.replace(/\D/g, ""); 
+    return numeric
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
+      .slice(0, 14); 
+  }
+
+  function unmaskCPF(value: string) {
+    return value.replace(/\D/g, "");
+  }
+
+  // garante valor válido de role
+  const roleValue = allowedRoles.includes(form.role) ? form.role : allowedRoles[0];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="backdrop" onClick={onClose} />
@@ -59,7 +91,7 @@ export default function UserEditModal({ open, onClose, initial, onSubmit }: Prop
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Editar usuário</h3>
           <button
             onClick={onClose}
-            className="rounded-lg bg-gray-100 px-3 py-1.5 text-sm hover:bg-gray-200 dark:bg-white/10 dark:hover:bg:white/20"
+            className="rounded-lg bg-gray-100 px-3 py-1.5 text-sm hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/20"
             aria-label="Fechar"
           >
             ✕
@@ -86,11 +118,13 @@ export default function UserEditModal({ open, onClose, initial, onSubmit }: Prop
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">CNPJ/CPF</label>
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">CPF</label>
             <input
               className="input"
               value={form.cnpj_cpf}
-              onChange={(e) => onChange("cnpj_cpf", e.target.value)}
+              onChange={(e) => onChange("cnpj_cpf", formatCPF(e.target.value))}
+              placeholder="Digite o CPF"
+              maxLength={14} // 000.000.000-00
             />
           </div>
 
@@ -98,12 +132,10 @@ export default function UserEditModal({ open, onClose, initial, onSubmit }: Prop
             <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Perfil</label>
             <select
               className="input"
-              value={form.role}
+              value={roleValue}
               onChange={(e) => onChange("role", e.target.value as Role)}
             >
-              <option value="client">Client</option>
-              <option value="admin">Admin</option>
-              <option value="administrator">Administrator</option>
+              {allowedRoles.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
 
@@ -128,4 +160,5 @@ export default function UserEditModal({ open, onClose, initial, onSubmit }: Prop
     </div>
   );
 }
+
 

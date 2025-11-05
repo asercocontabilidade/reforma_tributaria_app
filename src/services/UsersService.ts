@@ -3,7 +3,8 @@ import { apiFetch } from "./api";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-export type Role = "client" | "admin" | "administrator";
+/** Perfis válidos */
+export type Role = "client" | "support" | "administrator";
 
 export type UserRow = {
   id: number;
@@ -16,6 +17,8 @@ export type UserRow = {
   status_changed_at: string | null;
   company_id?: number | null;
   is_authenticated?: boolean | null;
+  /** preenchido no front a partir do company_id */
+  company_name?: string | null;
 };
 
 export type CreateUserPayload = {
@@ -52,7 +55,7 @@ export async function createUser(payload: CreateUserPayload): Promise<void> {
   }
 }
 
-// ATIVAR/BLOQUEAR (status de conta)
+// ATIVAR/BLOQUEAR
 export async function updateUserStatus(id: number, is_active: boolean): Promise<void> {
   const url = `${API_URL}/users/${id}/status`;
   const res = await apiFetch(url, {
@@ -66,7 +69,7 @@ export async function updateUserStatus(id: number, is_active: boolean): Promise<
   }
 }
 
-// 🔵 NOVO: Toggle sessão (logado/deslogado)
+// Alternar sessão (logado/deslogado)
 export async function updateAuthenticatedStatus(id: number, is_authenticated: boolean): Promise<void> {
   const url = `${API_URL}/users/${id}/authenticated_status`;
   const res = await apiFetch(url, {
@@ -80,7 +83,7 @@ export async function updateAuthenticatedStatus(id: number, is_authenticated: bo
   }
 }
 
-// 🔵 NOVO: Buscar 1 usuário por id (para edição)
+// Buscar 1 usuário por id (para edição)
 export async function fetchUserById(id: number): Promise<UserRow> {
   const url = `${API_URL}/users/get_user_by_id/${id}`;
   const res = await apiFetch(url, { method: "GET" });
@@ -91,10 +94,7 @@ export async function fetchUserById(id: number): Promise<UserRow> {
   return res.json();
 }
 
-// 🔵 NOVO: Atualizar dados do usuário (email, nome, cnpj_cpf, role)
-// OBS: Se seu endpoint for diferente, ajuste a URL abaixo.
-// Atualizar dados do usuário (email, nome, cnpj_cpf, role)
-// Atualizar dados do usuário (email, nome, cnpj_cpf, role)
+// Atualizar dados do usuário
 export async function updateUser(payload: {
   id: number;
   email: string;
@@ -102,10 +102,9 @@ export async function updateUser(payload: {
   cnpj_cpf: string;
   role: Role;
 }): Promise<void> {
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-  const url = `${API_URL}/users/update_user`; // mantém a mesma rota
+  const url = `${API_URL}/users/update_user`;
   const res = await apiFetch(url, {
-    method: "PUT", // 👈 trocado para PATCH
+    method: "PUT",
     headers: { "Content-Type": "application/json", accept: "application/json" },
     body: JSON.stringify(payload),
   });
@@ -114,6 +113,25 @@ export async function updateUser(payload: {
     throw new Error(detail || "Falha ao atualizar usuário.");
   }
 }
+
+/** ===== Empresa (para razão social) ===== */
+export type Company = {
+  id: number;
+  company_name: string;
+};
+
+export async function fetchCompanyById(companyId: number): Promise<Company | null> {
+  if (!companyId && companyId !== 0) return null;
+  const url = `${API_URL}/company/find_company_by_company_id/${companyId}`;
+  const res = await apiFetch(url, { method: "GET" });
+  if (!res.ok) {
+    // se 404 ou erro, retorna null para não quebrar a lista
+    return null;
+  }
+  const data = await res.json();
+  return { id: data.id, company_name: data.company_name } as Company;
+}
+
 
 
 

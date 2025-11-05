@@ -1,5 +1,5 @@
 // src/pages/UsersPage.tsx
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createUser,
   fetchUsers,
@@ -7,6 +7,7 @@ import {
   updateAuthenticatedStatus, // deslogar
   fetchUserById,             // pré-preencher edição
   updateUser,                // salvar edição
+  fetchCompanyById,          // 👈 buscar razão social
   type UserRow,
   type CreateUserPayload,
   type Role,
@@ -22,7 +23,6 @@ async function preserveScroll<T>(fn: () => Promise<T>): Promise<T> {
   const y = window.scrollY;
   try {
     const res = await fn();
-    // restaura na próxima pintura
     requestAnimationFrame(() => window.scrollTo({ left: x, top: y, behavior: "auto" }));
     return res;
   } catch (e) {
@@ -32,7 +32,7 @@ async function preserveScroll<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 /* =========================================================
-   HorizontalScroller — setas com position: sticky
+   HorizontalScroller
 ========================================================= */
 function HorizontalScroller({
   children,
@@ -46,7 +46,12 @@ function HorizontalScroller({
   const ref = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(false);
-
+  const scrollByDir = (dir: 1 | -1, amount = step) => {
+    const el = ref.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * amount, behavior: "smooth" });
+  };
+  
   function updateArrows() {
     const el = ref.current;
     if (!el) return;
@@ -58,25 +63,31 @@ function HorizontalScroller({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+
     updateArrows();
+
     const onScroll = () => updateArrows();
-    const onResize = () => updateArrows();
     el.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize, { passive: true });
-    const t = setTimeout(updateArrows, 50);
+
+    const ro = new ResizeObserver(() => updateArrows());
+    ro.observe(el);
+
+    const onWinResize = () => updateArrows();
+    window.addEventListener("resize", onWinResize, { passive: true });
+
+    const t = setTimeout(updateArrows, 60);
+
     return () => {
       el.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
+      window.removeEventListener("resize", onWinResize);
+      ro.disconnect();
       clearTimeout(t);
     };
   }, []);
 
-  function scrollByDir(dir: 1 | -1) {
-    ref.current?.scrollBy({ left: dir * step, behavior: "smooth" });
-  }
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative isolate ${className}`}>
       <div
         ref={ref}
         className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none]"
@@ -86,21 +97,20 @@ function HorizontalScroller({
         <div className="no-scrollbar min-w-full">{children}</div>
       </div>
 
-      {/* Botões fora do contêiner rolável horizontalmente, com sticky para acompanhar o scroll vertical */}
-      {/* 👉 wrapper para não bloquear cliques na tabela */}
+      {/* Setas sobre o scroller (acompanham o scroll vertical da página) */}
       <div className="pointer-events-none">
         {canLeft && (
           <button
             type="button"
             onClick={() => scrollByDir(-1)}
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white p-2 shadow-md ring-1 ring-black/5
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-30 rounded-full bg-white p-2 shadow-md ring-1 ring-black/5
                       hover:shadow-lg transition dark:bg-white/10 dark:text-white dark:ring-white/10
                       pointer-events-auto"
             aria-label="Rolagem para a esquerda"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2}>
+            <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
           </button>
         )}
 
@@ -108,18 +118,17 @@ function HorizontalScroller({
           <button
             type="button"
             onClick={() => scrollByDir(1)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white p-2 shadow-md ring-1 ring-black/5
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-30 rounded-full bg-white p-2 shadow-md ring-1 ring-black/5
                       hover:shadow-lg transition dark:bg-white/10 dark:text-white dark:ring-white/10
                       pointer-events-auto"
             aria-label="Rolagem para a direita"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2}>
+            <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
           </button>
         )}
       </div>
-
     </div>
   );
 }
@@ -189,12 +198,60 @@ export default function UsersPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<UserRow | null>(null);
 
+  // filtros
+  const [filterEmail, setFilterEmail] = useState("");
+  const [filterCompany, setFilterCompany] = useState("");
+
+  // cache de empresas por id (para evitar chamadas repetidas)
+  const companyCacheRef = useRef<Map<number, string>>(new Map());
+
+  async function enrichWithCompanyName(list: UserRow[]): Promise<UserRow[]> {
+    // ids únicos válidos
+    const ids = Array.from(
+      new Set(
+        list
+          .map(u => u.company_id)
+          .filter((v): v is number => typeof v === "number" && !Number.isNaN(v))
+      )
+    );
+
+    // busca apenas os que não estão no cache
+    const toFetch = ids.filter(id => !companyCacheRef.current.has(id));
+    if (toFetch.length) {
+      const results = await Promise.allSettled(toFetch.map(id => fetchCompanyById(id)));
+      results.forEach((r, i) => {
+        const id = toFetch[i];
+        if (r.status === "fulfilled" && r.value) {
+          companyCacheRef.current.set(id, r.value.company_name || "");
+        } else {
+          companyCacheRef.current.set(id, "");
+        }
+      });
+    }
+
+    // aplica company_name no array
+    return list.map(u => ({
+      ...u,
+      company_name:
+        typeof u.company_id === "number"
+          ? (companyCacheRef.current.get(u.company_id) ?? null)
+          : null,
+    }));
+  }
+
   async function load() {
     setLoading(true);
     setErr(null);
     try {
       const data = await fetchUsers();
-      setRows(data);
+      const enriched = await enrichWithCompanyName(data);
+
+      // 👇 ORDENAR A-Z por email (case-insensitive, com fallback para string vazia)
+      enriched.sort((a, b) =>
+        (a.full_name || "").localeCompare(b.full_name || "", "pt-BR", { sensitivity: "base" })
+      );
+
+      setRows(enriched);
     } catch (e: any) {
       setErr(e?.message || "Falha ao carregar usuários.");
       setRows([]);
@@ -203,8 +260,10 @@ export default function UsersPage() {
     }
   }
 
+
   useEffect(() => {
-    preserveScroll(load); // já preserva a posição no primeiro carregamento também
+    preserveScroll(load);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleCreate(data: CreateUserPayload) {
@@ -231,9 +290,33 @@ export default function UsersPage() {
   async function openEdit(u: UserRow) {
     await preserveScroll(async () => {
       const full = await fetchUserById(u.id);
-      setEditing(full);
+      // também preencher razão social (se ainda não tiver)
+      const withCompany =
+        typeof full.company_id === "number"
+          ? { ...full, company_name: companyCacheRef.current.get(full.company_id!) ?? null }
+          : full;
+      setEditing(withCompany);
       setEditOpen(true);
     });
+  }
+  
+  function formatCpfCnpj(value?: string | null): string {
+    if (!value) return "—";
+    const digits = value.replace(/\D/g, "");
+
+    if (digits.length === 11) {
+      // CPF
+      return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+    } else if (digits.length === 14) {
+      // CNPJ
+      return digits.replace(
+        /(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,
+        "$1.$2.$3/$4-$5"
+      );
+    }
+
+    // já vem formatado ou tem tamanho inesperado
+    return value;
   }
 
   async function handleEditSubmit(data: { id: number; email: string; full_name: string; cnpj_cpf: string; role: Role }) {
@@ -244,7 +327,20 @@ export default function UsersPage() {
     });
   }
 
-  const total = rows.length;
+  const filteredRows = useMemo(() => {
+    const emailQ = filterEmail.trim().toLowerCase();
+    const compQ = filterCompany.trim().toLowerCase();
+
+    return rows.filter(r => {
+      const okEmail =
+        !emailQ || (r.email || "").toLowerCase().includes(emailQ);
+      const okCompany =
+        !compQ || (r.company_name || "").toLowerCase().includes(compQ);
+      return okEmail && okCompany;
+    });
+  }, [rows, filterEmail, filterCompany]);
+
+  const total = filteredRows.length;
   const hasData = total > 0;
 
   return (
@@ -258,6 +354,28 @@ export default function UsersPage() {
         >
           + Novo usuário
         </button>
+      </div>
+
+      {/* Filtros */}
+      <div className="mb-3 grid gap-3 sm:grid-cols-1 md:grid-cols-3">
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Filtrar por email</label>
+          <input
+            className="input"
+            placeholder="ex: joao@empresa.com"
+            value={filterEmail}
+            onChange={(e) => setFilterEmail(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Filtrar por empresa</label>
+          <input
+            className="input"
+            placeholder="ex: Aserco"
+            value={filterCompany}
+            onChange={(e) => setFilterCompany(e.target.value)}
+          />
+        </div>
       </div>
 
       {err && (
@@ -284,8 +402,9 @@ export default function UsersPage() {
             <thead>
               <tr className="text-left text-sm text-gray-600 dark:text-gray-300">
                 <th className="px-3 py-2">Email</th>
-                <th className="px-3 py-2">Nome</th>
-                <th className="px-3 py-2">CPF</th>
+                <th className="px-3 py-2 min-w-[160px]">Nome</th>
+                <th className="px-3 py-2 min-w-[140px]">CPF</th>
+                <th className="px-3 py-2">Razão social</th> {/* 👈 NOVA COLUNA */}
                 <th className="px-3 py-2">Perfil</th>
                 <th className="px-3 py-2">Status</th>
                 <th className="px-3 py-2">Sessão</th>
@@ -294,11 +413,12 @@ export default function UsersPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((u) => (
+              {filteredRows.map((u) => (
                 <tr key={u.id} className="card dark:bg-[#0f0e2f]">
                   <td className="px-3 py-2">{u.email}</td>
                   <td className="px-3 py-2">{u.full_name || "—"}</td>
-                  <td className="px-3 py-2">{u.cnpj_cpf || "—"}</td>
+                  <td className="px-3 py-2">{formatCpfCnpj(u.cnpj_cpf)}</td>
+                  <td className="px-3 py-2">{u.company_name || "—"}</td> {/* 👈 mostra razão social */}
                   <td className="px-3 py-2 capitalize">{u.role}</td>
                   <td className="px-3 py-2">
                     <StatusBadge active={u.is_active} />
@@ -367,3 +487,4 @@ export default function UsersPage() {
     </div>
   );
 }
+

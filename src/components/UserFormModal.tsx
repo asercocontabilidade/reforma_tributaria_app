@@ -1,6 +1,7 @@
 // src/components/UserFormModal.tsx
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { CreateUserPayload, Role } from "../services/UsersService";
+import { useAuth } from "../contexts/AuthContext"; 
 
 type Props = {
   open: boolean;
@@ -8,17 +9,49 @@ type Props = {
   onSubmit: (data: CreateUserPayload) => Promise<void>;
 };
 
-const ROLES: Role[] = ["client", "admin", "administrator"];
-
 export default function UserFormModal({ open, onClose, onSubmit }: Props) {
+  const auth = useAuth();
+  const currentRole = auth.role; // "client" | "support" | "administrator"
+
+  // opções de papel baseadas no papel do usuário logado
+  const allowedRoles: Role[] = useMemo(() => {
+    if (currentRole === "administrator") return ["client", "support", "administrator"];
+    // support só pode criar client/support
+    return ["client", "support"];
+  }, [currentRole]);
+
   const [email, setEmail] = useState("");
   const [cnpjCpf, setCnpjCpf] = useState("");
   const [ip, setIp] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState<Role>("client");
+  const [role, setRole] = useState<Role>(allowedRoles[0] || "client");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  const formatCPF = (value: string) => {
+    // Remove tudo que não for número
+    const numeric = value.replace(/\D/g, "");
+
+    // Aplica formatação: 000.000.000-00
+    return numeric
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
+      .slice(0, 14); // Limita ao formato completo
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setCnpjCpf(formatCPF(value));
+  };
+
+  function unmaskCPF(value: string) {
+    return value.replace(/\D/g, "");
+  }
+
+  // se mudar allowedRoles (ex.: ao trocar usuário), mantém um válido
+  const roleValue = allowedRoles.includes(role) ? role : allowedRoles[0] || "client";
 
   if (!open) return null;
 
@@ -29,15 +62,14 @@ export default function UserFormModal({ open, onClose, onSubmit }: Props) {
     try {
       await onSubmit({
         email,
-        cnpj_cpf: cnpjCpf || undefined,
+        cnpj_cpf: unmaskCPF(cnpjCpf),
         ip_address: ip || undefined,
         password,
         full_name: fullName || undefined,
-        role,
+        role: roleValue,
       });
       onClose();
-      // limpa
-      setEmail(""); setCnpjCpf(""); setIp(""); setPassword(""); setFullName(""); setRole("client");
+      setEmail(""); setCnpjCpf(""); setIp(""); setPassword(""); setFullName("");
     } catch (ex: any) {
       setErr(ex?.message || "Falha ao criar usuário");
     } finally {
@@ -47,10 +79,7 @@ export default function UserFormModal({ open, onClose, onSubmit }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
       <div className="backdrop" onClick={onClose} />
-
-      {/* Modal */}
       <div className="relative z-10 w-[min(92vw,680px)] rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-white/10 dark:bg-[#0f0e2f]">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Novo usuário</h3>
@@ -82,8 +111,16 @@ export default function UserFormModal({ open, onClose, onSubmit }: Props) {
             <input className="input" value={fullName} onChange={e => setFullName(e.target.value)} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">CNPJ/CPF</label>
-            <input className="input" value={cnpjCpf} onChange={e => setCnpjCpf(e.target.value)} />
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">
+              CPF
+            </label>
+            <input
+              className="input"
+              value={cnpjCpf}
+              onChange={handleChange}
+              placeholder="Digite o CPF"
+              maxLength={14} // 14 caracteres incluindo pontos e traço
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">IP address</label>
@@ -91,8 +128,8 @@ export default function UserFormModal({ open, onClose, onSubmit }: Props) {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Perfil *</label>
-            <select className="input" value={role} onChange={e => setRole(e.target.value as Role)}>
-              {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+            <select className="input" value={roleValue} onChange={e => setRole(e.target.value as Role)}>
+              {allowedRoles.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
 
@@ -109,3 +146,4 @@ export default function UserFormModal({ open, onClose, onSubmit }: Props) {
     </div>
   );
 }
+
