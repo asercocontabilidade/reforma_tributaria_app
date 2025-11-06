@@ -14,6 +14,21 @@ const CHECK_OPTIONS = [
   { label: "Descrição TIPI", value: "DESCRIÇÃO TIPI" },
 ] as const;
 
+function AnexoCell({ value }: { value: string }) {
+  const isExc = value?.trim().toLowerCase() === "exceções" || value?.trim().toLowerCase() === "excecoes";
+  if (!isExc) return <>{value || "—"}</>;
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium
+                 bg-amber-100 text-amber-800 ring-1 ring-amber-200
+                 dark:bg-amber-900/30 dark:text-amber-200 dark:ring-amber-700/40"
+      title="Linha proveniente da aba Exceções"
+    >
+      Exceções
+    </span>
+  );
+}
+
 export default function ItemsSearchPage() {
   const [selected, setSelected] = useState<Exclude<FilterField, "ALL">[]>([]);
   const [q1, setQ1] = useState("");
@@ -188,7 +203,9 @@ export default function ItemsSearchPage() {
                       ].join(" ")}
                     >
                     <td className="px-3 py-2">{row.ITEM}</td>
-                    <td className="px-3 py-2 w-24">{row.ANEXO}</td>
+                   <td className="px-3 py-2 w-24">
+                    <AnexoCell value={row.ANEXO as any} />
+                  </td>
                     <td className="px-3 py-2">{row["DESCRIÇÃO DO PRODUTO"]}</td>
                     <td className="px-3 py-2">{row.NCM}</td>
                     <td className="px-3 py-2">{row["DESCRIÇÃO TIPI"]}</td>
