@@ -272,7 +272,7 @@ export default function LoginPage() {
         )}
       </div>
 
-      <footer className="w-full px-6 text-center mt-10 md:mt-0 md:absolute md:bottom-4">
+      <footer className="w-full px-6 text-center mt-10 md:mt-0 md:absolute md:bottom-2">
         <p className="text-[11px] sm:text-xs md:text-sm text-white font-medium leading-relaxed max-w-5xl mx-auto opacity-80">
         {/* <p className="text-[11px] sm:text-xs md:text-sm text-white font-medium leading-relaxed max-w-5xl mx-auto opacity-90">  */}
 
