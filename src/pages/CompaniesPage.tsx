@@ -24,6 +24,22 @@ const formatPhoneView = (v?: string | null) => {
   return v || "—";
 };
 
+// ✅ Adicionado: Formatação de CPF
+const formatCpfView = (v?: string | null) => {
+  const digits = onlyDigits(v);
+  if (digits.length <= 11)
+    return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+  return v || "";
+};
+
+// ✅ Adicionado: Formatação de CNAE
+const formatCnaeView = (v?: string | null) => {
+  const digits = onlyDigits(v);
+  if (digits.length >= 7)
+    return digits.replace(/^(\d{4})(\d)(\d{2}).*/, "$1-$2/$3");
+  return v || "";
+};
+
 /* ===========================
    HorizontalScroller (mesmo comportamento)
 =========================== */
@@ -285,6 +301,31 @@ export default function CompaniesPage() {
   async function handleCreate(_: CompanyRow) { await load(); }
   async function handleEditSubmit(c: CompanyRow) { await updateCompany(c); await load(); }
 
+  // Estado para controlar quais colunas estão ocultas
+  const [hiddenColumns, setHiddenColumns] = useState<Record<string, boolean>>({});
+
+  const toggleColumn = (key: string) => {
+    setHiddenColumns(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const columns = [
+    { key: "email", label: "E-mail", width: "w-[150px]", collapsedWidth: "w-[70px]" },
+    { key: "cpf", label: "CPF", width: "w-[140px]", collapsedWidth: "w-[70px]" },
+    { key: "erp_code", label: "ERP Code", width: "w-[100px]", collapsedWidth: "w-[70px]" },
+    { key: "company_name", label: "Razão Social", width: "w-[220px]", collapsedWidth: "w-[90px]" },
+    { key: "cnae", label: "CNAE", width: "w-[110px]", collapsedWidth: "w-[70px]" },
+    { key: "cnae_description", label: "Descrição CNAE", width: "w-[180px]", collapsedWidth: "w-[90px]" },
+    { key: "tax_regime", label: "Regime", width: "w-[100px]", collapsedWidth: "w-[70px]" },
+    { key: "role", label: "Assinatura", width: "w-[120px]", collapsedWidth: "w-[80px]" },
+    { key: "monthly_value", label: "Valor", width: "w-[110px]", collapsedWidth: "w-[80px]" },
+    { key: "start", label: "Início", width: "w-[110px]", collapsedWidth: "w-[80px]" },
+    { key: "end", label: "Fim", width: "w-[110px]", collapsedWidth: "w-[80px]" },
+    { key: "fantasia", label: "Nome Fantasia", width: "w-[140px]", collapsedWidth: "w-[90px]" },
+    { key: "cnpj", label: "CNPJ", width: "w-[170px]", collapsedWidth: "w-[100px]" },
+    { key: "telefone", label: "Telefone", width: "w-[140px]", collapsedWidth: "w-[90px]" },
+    { key: "endereco", label: "Endereço", width: "w-[240px]", collapsedWidth: "w-[120px]" },
+  ];
+
   return (
     <div className="p-4 md:p-6">
       {/* Título + criar */}
@@ -295,8 +336,8 @@ export default function CompaniesPage() {
 
       {/* Filtro */}
       <div className="mb-4" style={{paddingTop: 20}}>
-        <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Filtrar:</label>
-        <input className="input w-full md:max-w-md" placeholder="Filtrar por qualquer campo…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Filtrar por empresa:</label>
+        <input className="input w-full md:max-w-md" placeholder="Filtrar por empresa…" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 
       {err && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-500/40 dark:bg-red-900/20 dark:text-red-200">{err}</div>}
@@ -305,68 +346,62 @@ export default function CompaniesPage() {
 
       {!loading && !err && filtered.length > 0 && (
         <HorizontalScroller className="mt-1">
-          <table className="min-w-full border-separate border-spacing-y-2">
-            <thead>
-              <tr className="text-left text-sm text-gray-600 dark:text-gray-300">
-                {/* ORDEM SOLICITADA */}
-                <th className="px-3 py-2">ERP Code</th>
-                <th className="px-3 py-2">Razão Social</th>
-                {/* <th className="px-3 py-2">Município</th> */}
-                {/* <th className="px-3 py-2">Estado</th> */}
-                <th className="px-3 py-2">CNAE Completo</th>
-                <th className="px-3 py-2">Regime</th>
-                <th className="px-3 py-2">Assinatura</th>
-                <th className="px-3 py-2">Valor</th>
-                {/* novas colunas solicitadas */}
-                <th className="px-3 py-2">Início</th>
-                <th className="px-3 py-2">Fim</th>
-                {/* extras */}
-                {/* demais em qualquer ordem */}
-                <th className="px-3 py-2">Nome Fantasia</th>
-                <th className="px-3 py-2">CNPJ</th>
-                <th className="px-3 py-2">Telefone</th>
-                <th className="px-3 py-2">Endereço</th>
-                <th className="px-3 py-2 text-right">Ações</th>
-              </tr>
-            </thead>
+          <table className="min-w-full border-separate border-spacing-y-2 table-fixed align-top">
+          <thead>
+            <tr className="text-left text-sm text-gray-600 dark:text-gray-300">
+              <th className="px-3 py-2 text-center w-[160px]">Ações</th>
+              {columns.map(col => (
+                <th
+                  key={col.key}
+                  className={`px-3 py-2 whitespace-nowrap overflow-hidden text-ellipsis transition-all duration-300 ${
+                    hiddenColumns[col.key] ? col.collapsedWidth : col.width
+                  }`}
+                >
+                  <div className="flex items-center gap-1 justify-between">
+                    <span className="truncate">{col.label}</span>
+                    <button
+                      type="button"
+                      onClick={() => toggleColumn(col.key)}
+                      className="text-gray-400 hover:text-gray-700 dark:hover:text-white flex-shrink-0"
+                      title={hiddenColumns[col.key] ? "Mostrar coluna" : "Ocultar coluna"}
+                    >
+                      {hiddenColumns[col.key] ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+
             <tbody>
               {filtered.map((c) => {
                 const expanded = expandedCompanyId === c.id;
                 const linked = usersForCompany(c.id);
                 return (
                   <tr key={c.id} className="card dark:bg-[#0f0e2f] align-top">
-                    <td className="px-3 py-2">{c.erp_code || "—"}</td>
-                    <td className="px-3 py-2">{c.company_name || "—"}</td>
-                    {/* <td className="px-3 py-2">{c.municipio || "—"}</td> */}
-                    {/* <td className="px-3 py-2">{c.estado || "—"}</td> */}
-                    <td className="px-3 py-2">{c.cnae_company || "—"}</td>
-                    <td className="px-3 py-2">{c.tax_regime || "—"}</td>
-                    <td className="px-3 py-2 capitalize">{c.role || "—"}</td>
-                    <td className="px-3 py-2 min-w-[110px]">{c.monthly_value != null ? `R$ ${Number(c.monthly_value).toFixed(2)}` : "—"}</td>
-                    {/* início/fim formatados */}
-                    <td className="px-3 py-2 text-sm">{c.contract_start_date ? formatISODateOnly(c.contract_start_date) : "—"}</td>
-                    <td className="px-3 py-2 text-sm">{c.contract_end_date ? formatISODateOnly(c.contract_end_date) : "—"}</td>
-                    {/* demais */}
-                    <td className="px-3 py-2 min-w-[140px]">{c.customer_name || "—"}</td>
-                    <td className="px-3 py-2">{formatCnpjView(c.cnpj)}</td>
-                    <td className="px-3 py-2">{formatPhoneView(c.phone_number)}</td>
-                    <td className="px-3 py-2 min-w-[240px]">{c.address || "—"}</td>
-
                     <td className="px-3 py-2 text-right">
                       <div className="inline-flex items-center gap-2">
-                        {/* 🔙 LÓGICA ANTIGA RESTAURADA */}
-                        <button
-                          className="rounded-lg px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10"
-                          onClick={() => setExpandedCompanyId((prev) => (prev === c.id ? null : c.id))}
-                        >
-                          Usuários vinculados
-                        </button>
                         <button
                           className="btn btn-primary rounded-lg px-3 py-1.5 text-sm"
                           title="Vincular usuário"
                           onClick={() => { setLinkCompany(c); setLinkOpen(true); }}
                         >
                           Vincular usuário
+                        </button>
+                        {/* 🔙 LÓGICA ANTIGA RESTAURADA */}
+                        <button
+                          className="rounded-lg px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10"
+                          onClick={() => setExpandedCompanyId((prev) => (prev === c.id ? null : c.id))}
+                        >
+                          Usuários vinculados
                         </button>
                         {/* Editar empresa (mantido) */}
                         <button
@@ -397,6 +432,71 @@ export default function CompaniesPage() {
                         </div>
                       )}
                     </td>
+                    <td
+                      className={`px-3 py-2 transition-all duration-300 overflow-hidden ${
+                        hiddenColumns.email
+                          ? "max-w-[70px] opacity-0 text-transparent"
+                          : "min-w-[150px] text-gray-900 dark:text-gray-100"
+                      }`}
+                    >
+                      {c.email || "—"}
+                    </td>
+                    <td className={`px-3 py-2 transition-all duration-300 ${hiddenColumns.cpf ? "opacity-0 w-0 overflow-hidden p-0" : "min-w-[140px]"}`}>
+                      {formatCpfView(c.cpf) || "—"}
+                    </td>
+
+                    <td className={`px-3 py-2 transition-all duration-300 ${hiddenColumns.erp_code ? "opacity-0 w-0 overflow-hidden p-0" : "min-w-[100px]"}`}>
+                      {c.erp_code || "—"}
+                    </td>
+
+                    <td className={`px-3 py-2 transition-all duration-300 ${hiddenColumns.company_name ? "opacity-0 w-0 overflow-hidden p-0" : "min-w-[220px]"}`}>
+                      {c.company_name || "—"}
+                    </td>
+
+                    <td className={`px-3 py-2 transition-all duration-300 ${hiddenColumns.cnae ? "opacity-0 w-0 overflow-hidden p-0" : "min-w-[110px]"}`}>
+                      {formatCnaeView(c.cnae_company) || "—"}
+                    </td>
+
+                    <td className={`px-3 py-2 transition-all duration-300 ${hiddenColumns.cnae_description ? "opacity-0 w-0 overflow-hidden p-0" : "min-w-[180px]"}`}>
+                      {c.cnae_description || "—"}
+                    </td>
+
+                    <td className={`px-3 py-2 transition-all duration-300 ${hiddenColumns.tax_regime ? "opacity-0 w-0 overflow-hidden p-0" : "min-w-[100px]"}`}>
+                      {c.tax_regime || "—"}
+                    </td>
+
+                    <td className={`px-3 py-2 transition-all duration-300 ${hiddenColumns.role ? "opacity-0 w-0 overflow-hidden p-0" : "min-w-[120px]"}`}>
+                      <span className="capitalize">{c.role || "—"}</span>
+                    </td>
+
+                    <td className={`px-3 py-2 transition-all duration-300 ${hiddenColumns.monthly_value ? "opacity-0 w-0 overflow-hidden p-0" : "min-w-[110px]"}`}>
+                      {c.monthly_value != null ? `R$ ${Number(c.monthly_value).toFixed(2)}` : "—"}
+                    </td>
+
+                    <td className={`px-3 py-2 text-sm transition-all duration-300 ${hiddenColumns.start ? "opacity-0 w-0 overflow-hidden p-0" : "min-w-[110px]"}`}>
+                      {c.contract_start_date ? formatISODateOnly(c.contract_start_date) : "—"}
+                    </td>
+
+                    <td className={`px-3 py-2 text-sm transition-all duration-300 ${hiddenColumns.end ? "opacity-0 w-0 overflow-hidden p-0" : "min-w-[110px]"}`}>
+                      {c.contract_end_date ? formatISODateOnly(c.contract_end_date) : "—"}
+                    </td>
+
+                    <td className={`px-3 py-2 transition-all duration-300 ${hiddenColumns.fantasia ? "opacity-0 w-0 overflow-hidden p-0" : "min-w-[140px]"}`}>
+                      {c.customer_name || "—"}
+                    </td>
+
+                    <td className={`px-3 py-2 transition-all duration-300 ${hiddenColumns.cnpj ? "opacity-0 w-0 overflow-hidden p-0" : "min-w-[170px]"}`}>
+                      {formatCnpjView(c.cnpj)}
+                    </td>
+
+                    <td className={`px-3 py-2 transition-all duration-300 ${hiddenColumns.telefone ? "opacity-0 w-0 overflow-hidden p-0" : "min-w-[140px]"}`}>
+                      {formatPhoneView(c.phone_number)}
+                    </td>
+
+                    <td className={`px-3 py-2 transition-all duration-300 ${hiddenColumns.endereco ? "opacity-0 w-0 overflow-hidden p-0" : "min-w-[240px]"}`}>
+                      {c.address || "—"}
+                    </td>
+
                   </tr>
                 );
               })}

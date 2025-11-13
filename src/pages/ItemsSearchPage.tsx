@@ -102,7 +102,7 @@ export default function ItemsSearchPage() {
   return (
     <div className="p-4 md:p-6">
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <h2 className="text-2xl font-semibold text-primary dark:text-white">Alíquota 28%</h2>
+        <h2 className="text-2xl font-semibold text-primary dark:text-white">Alíquota Padrão do IVA dual (CBS + IBS) 28%</h2>
 
         <FilterDropdown
           options={CHECK_OPTIONS as any}

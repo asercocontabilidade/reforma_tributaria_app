@@ -60,7 +60,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-login flex items-center justify-center p-4 transition-all duration-300">
+    <div className="relative min-h-screen bg-login flex flex-col items-center justify-center p-4 transition-all duration-300">
       <div
         className={`w-full max-w-5xl transition-all duration-500 ${
           showInfo ? "grid md:grid-cols-2 gap-8" : "flex justify-center"
@@ -75,7 +75,7 @@ export default function LoginPage() {
           }`}
         >
           <h2 className="mb-1 text-2xl font-semibold text-primary dark:text-white text-center">
-            Aserco Contabilidade
+            Aserco Tributário
           </h2>
           <p className="mb-6 text-sm text-gray-600 dark:text-gray-300 text-center">
             Acesse o nosso sistema com suas credenciais
@@ -271,6 +271,19 @@ export default function LoginPage() {
           </aside>
         )}
       </div>
+
+      <footer className="w-full px-6 text-center mt-10 md:mt-0 md:absolute md:bottom-8">
+        <p className="text-[11px] sm:text-xs md:text-sm text-white font-medium leading-relaxed max-w-5xl mx-auto opacity-80">
+        {/* <p className="text-[11px] sm:text-xs md:text-sm text-white font-medium leading-relaxed max-w-5xl mx-auto opacity-90">  */}
+
+        {/* <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 dark:text-gray-400 font-medium leading-relaxed max-w-5xl mx-auto opacity-80">  */}
+          Este sistema e seu conteúdo são de propriedade exclusiva da{" "}
+          <span className="font-semibold">Aserco Contabilidade</span>. É vedada
+          qualquer forma de acesso, reprodução, distribuição ou uso por terceiros
+          sem autorização prévia e expressa da empresa, sob pena de responsabilidade
+          civil e penal.
+        </p>
+      </footer>
 
       <style>{`
         @keyframes fadeIn {

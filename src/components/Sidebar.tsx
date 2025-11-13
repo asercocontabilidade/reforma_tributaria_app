@@ -167,7 +167,7 @@ export default function Sidebar({ isOpen, onClose }) {
           </div>
 
           {/* Título abaixo do botão */}
-          <h1 className="text-xl font-bold tracking-wide">Reforma Tributária</h1>
+          <h1 className="text-xl font-bold tracking-wide">Aserco Tributário</h1>
         </div>
 
 
