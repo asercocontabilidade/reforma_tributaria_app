@@ -15,18 +15,41 @@ const CHECK_OPTIONS = [
 ] as const;
 
 function AnexoCell({ value }: { value: string }) {
-  const isExc = value?.trim().toLowerCase() === "exceções" || value?.trim().toLowerCase() === "excecoes";
-  if (!isExc) return <>{value || "—"}</>;
-  return (
-    <span
-      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium
-                 bg-amber-100 text-amber-800 ring-1 ring-amber-200
-                 dark:bg-amber-900/30 dark:text-amber-200 dark:ring-amber-700/40"
-      title="Linha proveniente da aba Exceções"
-    >
-      Exceções
-    </span>
-  );
+  const val = value?.trim().toLowerCase();
+
+  const isExc =
+    val === "exceções" || val === "excecoes";
+
+  const isTrib =
+    val === "tributado" || val === "tributados";
+
+  if (isExc) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium
+                   bg-amber-100 text-amber-800 ring-1 ring-amber-200
+                   dark:bg-amber-900/30 dark:text-amber-200 dark:ring-amber-700/40"
+        title="Linha proveniente da aba Exceções"
+      >
+        Exceções
+      </span>
+    );
+  }
+
+  if (isTrib) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium
+                   bg-green-100 text-green-800 ring-1 ring-green-200
+                   dark:bg-green-900/30 dark:text-green-200 dark:ring-green-700/40"
+        title="Linha proveniente da aba Tributado"
+      >
+        Tributado
+      </span>
+    );
+  }
+
+  return <>{value || "—"}</>;
 }
 
 export default function ItemsSearchPage() {
@@ -35,7 +58,7 @@ export default function ItemsSearchPage() {
   const [q2, setQ2] = useState("");
 
   const [page, setPage] = useState(1);
-  const [limit] = useState(15);
+  const [limit] = useState(20);
 
   const [data, setData] = useState<ItemRow[]>([]);
   const [totalPages, setTotalPages] = useState(1);

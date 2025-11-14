@@ -90,6 +90,43 @@ function GearIcon({ className = "h-5 w-5" }) {
   );
 }
 
+function IconRobot({ className = "w-5 h-5" }) {
+  return (
+    <svg
+      className={`${className} text-white animate-[glow_3s_ease-in-out_infinite]`}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="8" width="18" height="12" rx="2" className="stroke-current" />
+      <path d="M12 2v4" className="stroke-current" />
+      {/* olhos piscando */}
+      <circle cx="8" cy="14" r="2" className="fill-current text-blue-400 animate-[blink_4s_infinite]" />
+      <circle cx="16" cy="14" r="2" className="fill-current text-blue-400 animate-[blink_4s_infinite_delay]" />
+
+      {/* animações CSS inline */}
+      <style>{`
+        @keyframes glow {
+          0%, 100% { filter: drop-shadow(0 0 1px rgba(59,130,246,0.4)); }
+          50% { filter: drop-shadow(0 0 6px rgba(59,130,246,0.8)); }
+        }
+
+        @keyframes blink {
+          0%, 90%, 100% { transform: scaleY(1); opacity: 1; }
+          92%, 98% { transform: scaleY(0.1); opacity: 0.5; }
+        }
+
+        .animate-[blink_4s_infinite_delay] {
+          animation: blink 4s infinite 2s; /* pisca alternado */
+        }
+      `}</style>
+    </svg>
+  );
+}
+
 export default function Sidebar({ isOpen, onClose }) {
   const { role, clear } = useAuth();
   const admin = isAdmin(role);
@@ -188,6 +225,16 @@ export default function Sidebar({ isOpen, onClose }) {
             <span>Consulta NCM</span>
             
           </NavLink>
+
+          <NavLink
+            to="/chatGPT"
+            className={({ isActive }) => `${linkBase} ${isActive ? linkActive : ""}`}
+            onClick={handleNavClick}
+          >
+            <IconRobot className="w-5 h-5" />
+            <span>RT25</span>
+          </NavLink>
+
           <NavLink
             to="/configuracoes"
             className={({ isActive }) =>

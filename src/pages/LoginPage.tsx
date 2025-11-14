@@ -110,6 +110,7 @@ export default function LoginPage() {
               <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
                 Senha
               </span>
+
               <div className="relative">
                 <input
                   type={showPwd ? "text" : "password"}
@@ -125,11 +126,20 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setShowPwd((s) => !s)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-                  aria-label={showPwd ? "Ocultar senha" : "Mostrar senha"}
                 >
                   {showPwd ? "Ocultar" : "Mostrar"}
                 </button>
               </div>
+
+              {/* 🔹 Botão de esqueci a senha abaixo do campo */}
+              {/* <button
+                type="button"
+                onClick={() => {}}
+                // onClick={() => navigate("/forgot-password")}
+                className="mt-1 text-xs font-medium text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50 rounded"
+              >
+                Esqueci a senha
+              </button> */}
             </label>
 
             <button

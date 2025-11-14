@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import HomePage from "./pages/HomePage";
@@ -13,20 +13,67 @@ import UsersPage from "./pages/UsersPage";
 import PageNewLayout from "./pages/PageNewLayout";
 import CompaniesPage from "./pages/CompaniesPage";
 import SettingsPage from "./pages/SettingsPage";
+import ChatGptPage from "./pages/ChatGptPage";
+import TermsModal from "./components/TermsModal";
+import { checkSignedContract, signContract } from "./services/TermsService";
 
 function Shell() {
   const { role } = useAuth();
   const admin = isAdmin(role);
+  const { userId, clear } = useAuth(); // já existe parcialmente, agora inclui clear()
+  const [mustAccept, setMustAccept] = useState(false);
+
+  const TYPE = "Termos de uso";
 
   // No mobile: abre/fecha normalmente. No desktop: permanece aberto ao navegar.
   const [sidebarOpen, setSidebarOpen] = useState(() =>
     typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches
   );
 
+  useEffect(() => {
+    if (!userId) return;
+
+    async function validate() {
+      try {
+        const ok = await checkSignedContract(userId, TYPE);
+        if (!ok) setMustAccept(true);
+      } catch (err: any) {
+        // Caso retorne: "Contrato não encontrado"
+        if (String(err?.message).includes("Contrato não encontrado")) {
+          setMustAccept(true);
+        }
+      }
+    }
+
+    validate();
+  }, [userId]);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0b0a28]">
       {/* Sidebar */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      
+      {mustAccept && (
+        <TermsModal
+          open={mustAccept}
+          onReject={async () => {
+            await clear();        
+            window.location.href = "/login";
+          }}
+          onAccept={async () => {
+            await signContract({
+              user_id: userId!,
+              type_of_contract: TYPE,
+              is_signature_accepted: true,
+              term_content:
+                "O usuário aceitou os Termos de Uso conforme LGPD. (Exemplo)",
+            });
+
+            setMustAccept(false); // libera acesso ao sistema
+          }}
+        />
+      )}
+
 
       {/* Tab lateral (só desktop) quando a sidebar estiver fechada */}
       {!sidebarOpen && (
@@ -63,6 +110,7 @@ function Shell() {
             <Route path="/usuarios" element={<UsersPage />} />
             <Route path="/empresas" element={<CompaniesPage />} />
             <Route path="/configuracoes" element={<SettingsPage />} />
+            <Route path="/chatGPT" element={<ChatGptPage />} />
             {admin ? (
               <Route path="/cadastro" element={<CadastroPage />} />
             ) : (
